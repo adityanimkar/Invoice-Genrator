@@ -4,7 +4,8 @@ compatibility_date = "2026-06-09"
 compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_server_modules" ]
 
 [vars]
-DATABASE_URL = "postgresql://neondb_owner:npg_EeJjno0CYVl7@ep-late-waterfall-aprgboif-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# Replace with your actual Neon / PostgreSQL connection string
+DATABASE_URL = "postgresql://username:password@your-neon-host/neondb?sslmode=require"
 PORT = "3000"
 
 [assets]

@@ -1,0 +1,23 @@
+# Database & Environment Secrets
+.env
+.env.*
+*.env
+
+# Cloudflare Deployment & Secrets
+wrangler.toml
+.wrangler/
+.cache/
+
+# Android Build & Local Config
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+
+# Logs and OS files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.DS_Store
+Thumbs.db
