@@ -1,0 +1,10 @@
+{
+  "appId": "com.happyholidays.gstbilling",
+  "appName": "GST Billing App",
+  "webDir": "public",
+  "server": {
+    "url": "https://gst-billing.firwithrj.workers.dev",
+    "cleartext": true,
+    "androidScheme": "https"
+  }
+}
