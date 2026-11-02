@@ -18,8 +18,7 @@ if (typeof __dirname !== 'undefined') {
 // ========== COMPANY API ==========
 app.get('/api/company', async (req, res) => {
   try {
-    // Ensure gemini_api_key column exists
-    await db.query('ALTER TABLE company_profile ADD COLUMN IF NOT EXISTS gemini_api_key VARCHAR(255)');
+    // ponytail: DDL belongs in migrate-db.js, not on every read request
     const result = await db.query('SELECT * FROM company_profile LIMIT 1');
     if (result.rows.length === 0) {
       return res.status(404).send('Company profile not found. Please run database seeding.');
@@ -197,15 +196,11 @@ app.post('/api/invoices', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Double check customer exists
-    const custCheck = await client.query('SELECT name FROM customers WHERE name = $1', [customerName]);
-    if (custCheck.rows.length === 0) {
-      // Create customer automatically if missing
-      await client.query(
-        'INSERT INTO customers (name, gstin, state) VALUES ($1, $2, $3)',
-        [customerName, gstin, 'Karnataka']
-      );
-    }
+    // 1. Ensure customer exists (ponytail: single atomic upsert replaces select + insert)
+    await client.query(
+      'INSERT INTO customers (name, gstin, state) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING',
+      [customerName, gstin, 'Karnataka']
+    );
 
     // 2. Insert Invoice
     const invoiceQuery = `

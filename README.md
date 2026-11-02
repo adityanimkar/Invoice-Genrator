@@ -48,8 +48,8 @@ Optimized mobile interface with quick navigation, bottom action bar, fast floati
 | Platform | Access Link | Description |
 | :--- | :--- | :--- |
 | **🌐 Live Web App** | [gst-billing.firwithrj.workers.dev](https://gst-billing.firwithrj.workers.dev) | Cloudflare Workers edge deployment |
-| **📱 Android APK (Debug)** | [Download `gst-billing-app.apk`](gst-billing-app.apk) | Direct APK install for testing |
-| **📱 Android APK (Release)** | [Download `gst-billing-app-release.apk`](gst-billing-app-release.apk) | Optimized production APK |
+| **📱 Android APK (Debug)** | [Download `gst-billing-app.apk`](public/gst-billing-app.apk) | Direct APK install for testing |
+| **📱 Android APK (Release)** | [Download `gst-billing-app-release.apk`](public/gst-billing-app-release.apk) | Optimized production APK |
 
 ---
 
@@ -116,8 +116,6 @@ BILLING/
 ├── .env.template              # Environment variables template
 ├── capacitor.config.json      # Capacitor runtime configuration
 ├── db.js                      # PostgreSQL connection pool configuration
-├── gst-billing-app.apk        # Compiled Android debug APK
-├── gst-billing-app-release.apk# Compiled Android release APK
 ├── init-db.js                 # Database schema initialization and seed script
 ├── migrate-db.js              # Database migration script for schema updates
 ├── package.json               # Node.js dependencies and run scripts
