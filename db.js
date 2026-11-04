@@ -1,21 +1,22 @@
 const { Client } = require('pg');
 require('dotenv').config();
 
-if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL environment variable is missing!');
-  process.exit(1);
+function getClientConfig() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is missing.');
+  }
+  return {
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false
+    },
+    connectionTimeoutMillis: 10000
+  };
 }
 
-const clientConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  connectionTimeoutMillis: 10000
-};
-
 async function query(text, params) {
-  const client = new Client(clientConfig);
+  const client = new Client(getClientConfig());
   await client.connect();
   try {
     const res = await client.query(text, params);
@@ -27,7 +28,7 @@ async function query(text, params) {
 
 const poolMock = {
   connect: async () => {
-    const client = new Client(clientConfig);
+    const client = new Client(getClientConfig());
     await client.connect();
     client.release = () => {
       client.end().catch(err => console.error('Error closing transaction database client:', err));

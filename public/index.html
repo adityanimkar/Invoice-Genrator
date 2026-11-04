@@ -1298,13 +1298,25 @@ async function initApp() {
 
 // ========== UTILS ==========
 function getNextInvNo() {
+  const compName = state.company?.name || '';
+  let prefix = 'SHB';
+  if (compName) {
+    const letters = compName.replace(/[^a-zA-Z]/g, ' ').trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
+    if (letters.length >= 2) prefix = letters;
+  }
+  const currentYear = new Date().getFullYear().toString().slice(-2);
   const nums = state.invoices.map(i => {
+    if (!i.id) return 0;
     const parts = i.id.split('/');
-    return parts.length > 1 ? (parseInt(parts[1]) || 0) : 0;
+    if (parts.length >= 2) {
+      return parseInt(parts[1], 10) || 0;
+    }
+    const match = i.id.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
   });
   const maxNum = nums.length > 0 ? Math.max(...nums) : 455;
   const next = maxNum + 1;
-  return `SHB/${next}/20`;
+  return `${prefix}/${next}/${currentYear}`;
 }
 
 function numberToWords(num) {
@@ -2016,7 +2028,7 @@ async function startOcrProcessing() {
     items: []
   };
   
-  const apiKey = state.company.gemini_api_key || state.company.geminiApiKey || '';
+  const hasGemini = Boolean(state.company && (state.company.has_gemini_api_key || state.company.gemini_api_key || state.company.geminiApiKey));
   
   try {
     for (let i = 0; i < ocrFiles.length; i++) {
@@ -2025,9 +2037,9 @@ async function startOcrProcessing() {
       
       let parsed = null;
       
-      if (apiKey) {
-        substatusEl.textContent = `Sending image to Gemini 1.5 Flash...`;
-        parsed = await runGeminiOcr(file.dataUrl, file.type, apiKey);
+      if (hasGemini) {
+        substatusEl.textContent = `Processing image with Cloud AI OCR...`;
+        parsed = await runGeminiOcr(file.dataUrl, file.type);
       } else {
         const ocrLang = document.getElementById('ocr-lang-select')?.value || 'eng';
         substatusEl.textContent = `Running client-side local Tesseract OCR (${ocrLang.toUpperCase()})...`;
@@ -2061,53 +2073,22 @@ async function startOcrProcessing() {
   }
 }
 
-async function runGeminiOcr(dataUrl, mimeType, apiKey) {
-  const base64Data = dataUrl.split(',')[1];
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  
-  const response = await fetch(url, {
+async function runGeminiOcr(dataUrl, mimeType) {
+  const response = await apiFetch('/api/ai/ocr', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: "Analyze the attached invoice/bill image. The bill may be written in any language (e.g. English, Hindi, Kannada, Tamil, Spanish, etc.). Please extract key details and translate item names and descriptions to English while retaining correct numeric values for quantity, rate, and amount. Return a JSON object containing: customerName, gstin (exactly 15 chars if found), invoiceNumber, date (format: DD-Mon-YY, e.g. 11-Jun-26), address, items (array of objects containing: name, qty, rate, gstRate (choose from 5, 12, 18, 28), amount). Do not include any markdown tags or comments, output raw JSON only."
-            },
-            {
-              inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: base64Data
-              }
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
+      image: dataUrl,
+      mimeType: mimeType || 'image/jpeg'
     })
   });
   
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API Error (${response.status}): ${errorText}`);
+    throw new Error(`AI OCR Error (${response.status}): ${errorText}`);
   }
   
-  const result = await response.json();
-  try {
-    const textResponse = result.candidates[0].content.parts[0].text;
-    return JSON.parse(textResponse);
-  } catch (e) {
-    console.warn("Failed to parse Gemini response as JSON direct:", result);
-    const textResponse = result.candidates[0].content.parts[0].text;
-    const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    throw new Error("Invalid response format from Gemini API");
-  }
+  return await response.json();
 }
 
 function runLocalTesseractOcr(dataUrl, lang = 'eng') {
