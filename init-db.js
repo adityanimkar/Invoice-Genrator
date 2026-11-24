@@ -53,7 +53,8 @@ async function initDb() {
         logo_url TEXT,
         logo_size INTEGER DEFAULT 70,
         contact_person VARCHAR(255),
-        gemini_api_key VARCHAR(255)
+        gemini_api_key VARCHAR(255),
+        gstin_api_key VARCHAR(255)
       )
     `);
 

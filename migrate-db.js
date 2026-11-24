@@ -21,7 +21,8 @@ async function runMigration() {
       ADD COLUMN IF NOT EXISTS logo_size INTEGER DEFAULT 70,
       ADD COLUMN IF NOT EXISTS gemini_api_key VARCHAR(255),
       ADD COLUMN IF NOT EXISTS logo_url TEXT,
-      ADD COLUMN IF NOT EXISTS contact_person VARCHAR(255)
+      ADD COLUMN IF NOT EXISTS contact_person VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS gstin_api_key VARCHAR(255)
     `);
     console.log('Altered company_profile table.');
 

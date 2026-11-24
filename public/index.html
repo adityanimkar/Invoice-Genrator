@@ -2,6 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GST Billing & Invoice System</title>
 <script>
@@ -1703,8 +1706,27 @@ const GSTIN_STATE_MAP = {
 let gstinLookupTimer = null;
 
 function handleGstinInput(val, context, force = false) {
-  if (!val) return;
+  if (!val) {
+    if (context === 'invoice') {
+      state.newInvoice = state.newInvoice || {};
+      state.newInvoice.customer = state.newInvoice.customer || {};
+      state.newInvoice.customer.gstin = '';
+    }
+    const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
+    if (statusEl) {
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
+    }
+    return;
+  }
   const cleanVal = val.trim().toUpperCase();
+
+  // Keep state customer.gstin in sync
+  if (context === 'invoice') {
+    state.newInvoice = state.newInvoice || {};
+    state.newInvoice.customer = state.newInvoice.customer || {};
+    state.newInvoice.customer.gstin = cleanVal;
+  }
 
   // Instant state detection from 2-digit code
   if (cleanVal.length >= 2) {
@@ -1715,16 +1737,22 @@ function handleGstinInput(val, context, force = false) {
         const stateEl = document.getElementById('inv-state');
         if (stateEl && (!stateEl.value || stateEl.value === 'Karnataka' || stateEl.value !== info.state)) {
           stateEl.value = info.state;
-          if (state.newInvoice?.customer) state.newInvoice.customer.state = info.state;
+          state.newInvoice.customer.state = info.state;
         }
         const posEl = document.getElementById('inv-pos');
         if (posEl && (!posEl.value || posEl.value === 'Gujarat ( 24 )' || posEl.value !== info.pos)) {
           posEl.value = info.pos;
-          if (state.newInvoice) state.newInvoice.placeOfSupply = info.pos;
+          state.newInvoice.placeOfSupply = info.pos;
         }
       } else if (context === 'customer') {
         const stateEl = document.getElementById('nc-state');
         if (stateEl) stateEl.value = info.state;
+      }
+      const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
+      if (statusEl && cleanVal.length < 15) {
+        statusEl.style.display = 'inline-block';
+        statusEl.style.color = '#2563eb';
+        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${info.state} (${code})`;
       }
     }
   }
@@ -1743,34 +1771,35 @@ function handleGstinInput(val, context, force = false) {
     if (gstinLookupTimer) clearTimeout(gstinLookupTimer);
     gstinLookupTimer = setTimeout(() => {
       fetchGstinDetails(cleanVal, context);
-    }, force ? 0 : 300);
+    }, force ? 0 : 250);
   }
 }
 
 function applyGstinData(data, context, sourceLabel) {
   const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
   if (context === 'invoice') {
+    state.newInvoice = state.newInvoice || {};
+    state.newInvoice.customer = state.newInvoice.customer || {};
     if (data.name) {
       const custInput = document.getElementById('inv-customer');
       if (custInput) custInput.value = data.name;
-      state.newInvoice.customer = state.newInvoice.customer || {};
       state.newInvoice.customer.name = data.name;
       state.newInvoice.customer.gstin = data.gstin || '';
     }
     if (data.address) {
       const addrInput = document.getElementById('inv-addr');
       if (addrInput) addrInput.value = data.address;
-      if (state.newInvoice?.customer) state.newInvoice.customer.address = data.address;
+      state.newInvoice.customer.address = data.address;
     }
     if (data.phone) {
       const phoneInput = document.getElementById('inv-phone');
       if (phoneInput) phoneInput.value = data.phone;
-      if (state.newInvoice?.customer) state.newInvoice.customer.phone = data.phone;
+      state.newInvoice.customer.phone = data.phone;
     }
     if (data.state) {
       const stateInput = document.getElementById('inv-state');
       if (stateInput) stateInput.value = data.state;
-      if (state.newInvoice?.customer) state.newInvoice.customer.state = data.state;
+      state.newInvoice.customer.state = data.state;
     }
     if (data.placeOfSupply || data.pos) {
       const posVal = data.placeOfSupply || data.pos;
@@ -1781,10 +1810,9 @@ function applyGstinData(data, context, sourceLabel) {
     if (statusEl) {
       statusEl.style.display = 'inline-block';
       statusEl.style.color = '#16a34a';
-      statusEl.innerHTML = `✓ ${data.name || data.state}`;
-    }
-    if (data.name) {
-      showAlert(`Auto-filled: "${data.name}" (${sourceLabel || 'Matched'})`, 'success');
+      const labelText = data.name ? `${data.name} (${data.state || ''})` : (data.state || '');
+      statusEl.innerHTML = `<i class="ti ti-check"></i> Found: ${labelText}`;
+      statusEl.title = `${data.name || ''} - ${data.address || ''} [${sourceLabel || 'Matched'}]`;
     }
   } else if (context === 'customer') {
     if (data.name) {
@@ -1810,10 +1838,9 @@ function applyGstinData(data, context, sourceLabel) {
     if (statusEl) {
       statusEl.style.display = 'inline-block';
       statusEl.style.color = '#16a34a';
-      statusEl.innerHTML = `✓ ${data.name || data.state}`;
-    }
-    if (data.name) {
-      showAlert(`Auto-filled: "${data.name}" (${sourceLabel || 'Matched'})`, 'success');
+      const labelText = data.name ? `${data.name} (${data.state || ''})` : (data.state || '');
+      statusEl.innerHTML = `<i class="ti ti-check"></i> Found: ${labelText}`;
+      statusEl.title = `${data.name || ''} - ${data.address || ''} [${sourceLabel || 'Matched'}]`;
     }
   }
 }
@@ -1842,24 +1869,40 @@ async function fetchGstinDetails(gstin, context) {
     const data = await res.json();
 
     if (data.name) {
-      applyGstinData(data, context, data.source === 'customer_db' ? 'Customer DB' : (data.source === 'invoice_history' ? 'Invoice History' : 'Registry Lookup'));
+      applyGstinData(data, context, data.source === 'customer_db' ? 'Customer DB' : (data.source === 'invoice_history' ? 'Invoice History' : (data.source === 'gstin_provider' ? 'GST Provider' : 'Registry Lookup')));
     } else {
       // Auto-set state and POS
       if (context === 'invoice') {
         const stateEl = document.getElementById('inv-state');
-        if (stateEl && data.state) stateEl.value = data.state;
+        if (stateEl && data.state) {
+          stateEl.value = data.state;
+          state.newInvoice = state.newInvoice || {};
+          state.newInvoice.customer = state.newInvoice.customer || {};
+          state.newInvoice.customer.state = data.state;
+        }
         const posEl = document.getElementById('inv-pos');
-        if (posEl && data.placeOfSupply) posEl.value = data.placeOfSupply;
+        if (posEl && data.placeOfSupply) {
+          posEl.value = data.placeOfSupply;
+          state.newInvoice = state.newInvoice || {};
+          state.newInvoice.placeOfSupply = data.placeOfSupply;
+        }
+        // If customer name is empty, focus it so user can type the trade name
+        const custInput = document.getElementById('inv-customer');
+        if (custInput && !custInput.value) {
+          custInput.focus();
+        }
       } else if (context === 'customer') {
         const stateEl = document.getElementById('nc-state');
         if (stateEl && data.state) stateEl.value = data.state;
+        const nameInput = document.getElementById('nc-name');
+        if (nameInput && !nameInput.value) nameInput.focus();
       }
       if (statusEl) {
         statusEl.style.display = 'inline-block';
-        statusEl.style.color = '#0284c7';
-        statusEl.innerHTML = `✓ State: ${data.state}`;
+        statusEl.style.color = '#2563eb';
+        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType || 'Business'}`;
+        statusEl.title = `State and entity decoded from GSTIN. Type customer name to complete.`;
       }
-      showAlert(`Detected State: ${data.state} (Code ${data.stateCode}). Enter business name to complete.`, 'info');
     }
   } catch (err) {
     console.error('GSTIN lookup error:', err);
@@ -2235,7 +2278,7 @@ function renderNewInvoice() {
       <div class="form-grid ${showCustomerCard ? 'd-none' : ''}" style="gap:12px">
         <div class="form-group full">
           <label>Customer Name *</label>
-          <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" onchange="selectCustomer(this.value)">
+          <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" oninput="state.newInvoice=state.newInvoice||{};state.newInvoice.customer=state.newInvoice.customer||{};state.newInvoice.customer.name=this.value" onchange="selectCustomer(this.value)">
         </div>
         <div class="form-group">
           <label style="display:flex;justify-content:space-between;align-items:center;">
@@ -2251,15 +2294,15 @@ function renderNewInvoice() {
         </div>
         <div class="form-group">
           <label>PHONE</label>
-          <input type="text" id="inv-phone" value="${inv.customer?.phone||''}" placeholder="Phone number">
+          <input type="text" id="inv-phone" value="${inv.customer?.phone||''}" placeholder="Phone number" oninput="state.newInvoice=state.newInvoice||{};state.newInvoice.customer=state.newInvoice.customer||{};state.newInvoice.customer.phone=this.value">
         </div>
         <div class="form-group full">
           <label>Billing Address</label>
-          <input type="text" id="inv-addr" value="${inv.customer?.address||''}" placeholder="Address">
+          <input type="text" id="inv-addr" value="${inv.customer?.address||''}" placeholder="Address" oninput="state.newInvoice=state.newInvoice||{};state.newInvoice.customer=state.newInvoice.customer||{};state.newInvoice.customer.address=this.value">
         </div>
         <div class="form-group full">
           <label>State</label>
-          <input type="text" id="inv-state" value="${inv.customer?.state||'Karnataka'}" placeholder="State">
+          <input type="text" id="inv-state" value="${inv.customer?.state||'Karnataka'}" placeholder="State" oninput="state.newInvoice=state.newInvoice||{};state.newInvoice.customer=state.newInvoice.customer||{};state.newInvoice.customer.state=this.value">
         </div>
       </div>
     </div>
@@ -4238,10 +4281,17 @@ function renderSettings() {
             <input type="number" id="s-logo-size" value="${co.logo_size || co.logoSize || '70'}" min="30" max="250" placeholder="e.g. 70">
           </div>
           <div class="form-group full">
-            <label>Gemini API Key (for Multimodal AI OCR)</label>
+            <label>Gemini API Key (for Multimodal AI OCR & Smart GST Lookup)</label>
             <input type="password" id="s-gemini-api-key" value="${co.gemini_api_key || co.geminiApiKey || ''}" placeholder="Enter Gemini API Key (AIzaSy...)">
             <p style="font-size:10px;color:var(--color-text-secondary,#666);margin-top:2px;">
-              Leave blank to use local client-side Tesseract OCR. Obtain a free key from Google AI Studio.
+              Get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#0076f6;">Google AI Studio</a>. Used for multimodal AI bill scanning and looking up registered business names for new GST numbers.
+            </p>
+          </div>
+          <div class="form-group full">
+            <label>GSTIN API Key (Optional, for direct live GST portal verification)</label>
+            <input type="password" id="s-gstin-api-key" value="${co.gstin_api_key || co.gstinApiKey || ''}" placeholder="Enter API Key from gstincheck.co.in">
+            <p style="font-size:10px;color:var(--color-text-secondary,#666);margin-top:2px;">
+              Optional: For direct live government portal lookups. Get 20 free live requests from <a href="https://gstincheck.co.in/" target="_blank" style="color:#0076f6;">gstincheck.co.in</a>.
             </p>
           </div>
         </div>
@@ -4301,6 +4351,7 @@ async function saveSettings() {
   const logoUrl = document.getElementById('s-logo-url')?.value || '';
   const logoSize = document.getElementById('s-logo-size')?.value || '70';
   const geminiApiKey = document.getElementById('s-gemini-api-key')?.value || '';
+  const gstinApiKey = document.getElementById('s-gstin-api-key')?.value || '';
   
   if (!name || !gstin) return alert('Name and GSTIN are required.');
 
@@ -4321,7 +4372,8 @@ async function saveSettings() {
     contactPerson,
     logoUrl,
     logoSize,
-    geminiApiKey
+    geminiApiKey,
+    gstinApiKey
   };
 
   try {

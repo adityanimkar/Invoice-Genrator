@@ -10,9 +10,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Serve frontend static files
+// Serve frontend static files with no-cache on HTML to ensure updates load immediately
 if (typeof __dirname !== 'undefined') {
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
 }
 
 // ========== COMPANY API ==========
@@ -28,6 +36,10 @@ app.get('/api/company', async (req, res) => {
     if (company.gemini_api_key) {
       company.gemini_api_key = '••••••••';
     }
+    company.has_gstin_api_key = Boolean(company.gstin_api_key && company.gstin_api_key.trim());
+    if (company.gstin_api_key) {
+      company.gstin_api_key = '••••••••';
+    }
     res.json(company);
   } catch (err) {
     console.error('Error fetching company profile:', err);
@@ -36,7 +48,7 @@ app.get('/api/company', async (req, res) => {
 });
 
 app.put('/api/company', async (req, res) => {
-  const { name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, logoSize, geminiApiKey } = req.body;
+  const { name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, logoSize, geminiApiKey, gstinApiKey } = req.body;
   if (!name || !gstin) {
     return res.status(400).send('Name and GSTIN are required.');
   }
@@ -47,17 +59,21 @@ app.put('/api/company', async (req, res) => {
       // Retain existing key if user didn't enter a new key
       finalGeminiKey = check.rows[0].gemini_api_key || '';
     }
+    let finalGstinKey = gstinApiKey || '';
+    if (check.rows.length > 0 && finalGstinKey.includes('•')) {
+      finalGstinKey = check.rows[0].gstin_api_key || '';
+    }
 
     let result;
     if (check.rows.length === 0) {
       result = await db.query(
-        'INSERT INTO company_profile (name, address, gstin, state, state_code, phone, email, bank_name, bank_branch, bank_acc_no, bank_ifsc, bank_upi_id, terms, contact_person, logo_url, logo_size, gemini_api_key) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
-        [name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, parseInt(logoSize, 10) || 70, finalGeminiKey]
+        'INSERT INTO company_profile (name, address, gstin, state, state_code, phone, email, bank_name, bank_branch, bank_acc_no, bank_ifsc, bank_upi_id, terms, contact_person, logo_url, logo_size, gemini_api_key, gstin_api_key) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *',
+        [name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, parseInt(logoSize, 10) || 70, finalGeminiKey, finalGstinKey]
       );
     } else {
       result = await db.query(
-        'UPDATE company_profile SET name = $1, address = $2, gstin = $3, state = $4, state_code = $5, phone = $6, email = $7, bank_name = $8, bank_branch = $9, bank_acc_no = $10, bank_ifsc = $11, bank_upi_id = $12, terms = $13, contact_person = $14, logo_url = $15, logo_size = $16, gemini_api_key = $17 WHERE id = $18 RETURNING *',
-        [name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, parseInt(logoSize, 10) || 70, finalGeminiKey, check.rows[0].id]
+        'UPDATE company_profile SET name = $1, address = $2, gstin = $3, state = $4, state_code = $5, phone = $6, email = $7, bank_name = $8, bank_branch = $9, bank_acc_no = $10, bank_ifsc = $11, bank_upi_id = $12, terms = $13, contact_person = $14, logo_url = $15, logo_size = $16, gemini_api_key = $17, gstin_api_key = $18 WHERE id = $19 RETURNING *',
+        [name, address, gstin, state, stateCode, phone, email, bankName, bankBranch, bankAccNo, bankIfsc, bankUpiId, terms, contactPerson, logoUrl, parseInt(logoSize, 10) || 70, finalGeminiKey, finalGstinKey, check.rows[0].id]
       );
     }
 
@@ -65,6 +81,10 @@ app.put('/api/company', async (req, res) => {
     saved.has_gemini_api_key = Boolean(saved.gemini_api_key && saved.gemini_api_key.trim());
     if (saved.gemini_api_key) {
       saved.gemini_api_key = '••••••••';
+    }
+    saved.has_gstin_api_key = Boolean(saved.gstin_api_key && saved.gstin_api_key.trim());
+    if (saved.gstin_api_key) {
+      saved.gstin_api_key = '••••••••';
     }
     res.json(saved);
   } catch (err) {
@@ -581,7 +601,52 @@ app.get('/api/gstin-lookup/:gstin', async (req, res) => {
       });
     }
 
-    // 3. If Gemini AI is configured, query AI for registered business details
+    // 3. Check for GSTIN Verification API (gstincheck.co.in or similar)
+    let gstinApiKey = process.env.GSTIN_API_KEY;
+    if (!gstinApiKey) {
+      try {
+        const coRes = await db.query('SELECT gstin_api_key FROM company_profile LIMIT 1');
+        if (coRes.rows.length > 0 && coRes.rows[0].gstin_api_key) {
+          gstinApiKey = coRes.rows[0].gstin_api_key.trim();
+        }
+      } catch (e) {}
+    }
+
+    if (gstinApiKey && rawGstin.length === 15) {
+      try {
+        const gstinRes = await fetch(`https://sheet.gstincheck.co.in/check/${encodeURIComponent(gstinApiKey)}/${rawGstin}`);
+        if (gstinRes.ok) {
+          const gData = await gstinRes.json();
+          if (gData.flag && gData.data) {
+            const d = gData.data;
+            const tradeName = d.tradeNam || d.lgnm || '';
+            const addrObj = d.pradr?.addr || {};
+            const addressParts = [addrObj.bno, addrObj.st, addrObj.loc, addrObj.dst, addrObj.pncd].filter(Boolean);
+            const fullAddress = addressParts.join(', ');
+            if (tradeName) {
+              return res.json({
+                found: true,
+                source: 'gstin_provider',
+                gstin: rawGstin,
+                name: tradeName,
+                address: fullAddress,
+                phone: '',
+                email: '',
+                state: stateMeta.state,
+                stateCode: stateCode,
+                placeOfSupply: stateMeta.pos,
+                pan,
+                entityType
+              });
+            }
+          }
+        }
+      } catch (gErr) {
+        console.warn('GSTIN Provider lookup failed:', gErr.message);
+      }
+    }
+
+    // 4. If Gemini AI is configured, query AI for registered business details
     let geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
       const coRes = await db.query('SELECT gemini_api_key FROM company_profile LIMIT 1');
@@ -592,7 +657,7 @@ app.get('/api/gstin-lookup/:gstin', async (req, res) => {
 
     if (geminiKey && rawGstin.length === 15) {
       try {
-        const prompt = `Identify Indian registered business details for GSTIN: "${rawGstin}". State code is ${stateCode} (${stateMeta.state}), PAN is ${pan} (${entityType}). Return a JSON object with: { "name": "Exact Legal or Trade Business Name if known or empty", "address": "Registered principal office address / city / state if known or empty", "pincode": "6 digit pincode if known or empty" }. Output pure raw JSON only with no markdown tags.`;
+        const prompt = `Identify Indian registered business details for GSTIN: "${rawGstin}". State code is ${stateCode} (${stateMeta.state}), PAN is ${pan} (${entityType}). If this GSTIN belongs to a known registered business, company, or brand, return a JSON object with: { "name": "Exact Legal or Trade Business Name", "address": "Registered principal office address / city / state", "pincode": "6 digit pincode" }. If unknown or generic, return { "name": "", "address": "" }. Output pure raw JSON only with no markdown tags.`;
         const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
         const aiRes = await fetch(aiUrl, {
           method: 'POST',
