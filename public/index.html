@@ -1788,6 +1788,44 @@ const GSTIN_STATE_MAP = {
   '99': { state: 'Centre Jurisdiction', pos: 'Centre Jurisdiction ( 99 )' }
 };
 
+function getGstinInfo(gstin) {
+  if (!gstin || typeof gstin !== 'string') return null;
+  const clean = gstin.trim().toUpperCase();
+  if (clean.length < 2) return null;
+  const stateCode = clean.slice(0, 2);
+  const stateInfo = GSTIN_STATE_MAP[stateCode] || { state: 'Other Territory', pos: `Other (${stateCode})` };
+  
+  let entityType = 'Business';
+  let pan = '';
+  if (clean.length >= 10) {
+    pan = clean.slice(2, 12);
+    const pan4th = clean.charAt(5);
+    const entityTypes = {
+      'P': 'Individual / Proprietorship',
+      'C': 'Company / Corporate',
+      'H': 'Hindu Undivided Family (HUF)',
+      'F': 'Partnership Firm / LLP',
+      'A': 'Association of Persons (AOP)',
+      'T': 'Trust',
+      'B': 'Body of Individuals (BOI)',
+      'L': 'Local Authority',
+      'J': 'Artificial Juridical Person',
+      'G': 'Government Department'
+    };
+    if (entityTypes[pan4th]) {
+      entityType = entityTypes[pan4th];
+    }
+  }
+
+  return {
+    stateCode,
+    state: stateInfo.state,
+    pos: stateInfo.pos || `${stateInfo.state} ( ${stateCode} )`,
+    type: entityType,
+    pan
+  };
+}
+
 let gstinLookupTimer = null;
 
 function handleGstinInput(val, context, force = false) {
@@ -1842,11 +1880,23 @@ function handleGstinInput(val, context, force = false) {
     }
   }
 
-  // Check in-memory customers list first for instantaneous auto-fill
+  // Check in-memory customers list and past invoice history for instantaneous auto-fill
   if (cleanVal.length === 15) {
     const existing = state.customers.find(c => c.gstin && c.gstin.trim().toUpperCase() === cleanVal);
     if (existing) {
-      applyGstinData(existing, context, 'Existing Customer');
+      applyGstinData(existing, context, 'Saved Customer');
+      return;
+    }
+    const pastInv = state.invoices.find(i => i.gstin && i.gstin.trim().toUpperCase() === cleanVal);
+    if (pastInv) {
+      applyGstinData({
+        name: pastInv.customer_name || pastInv.customer,
+        gstin: pastInv.gstin,
+        address: pastInv.customerAddress || pastInv.address || '',
+        state: pastInv.customerState || pastInv.state || '',
+        phone: pastInv.customerPhone || pastInv.phone || '',
+        placeOfSupply: pastInv.place_of_supply || pastInv.placeOfSupply || ''
+      }, context, 'Invoice History');
       return;
     }
   }
@@ -1972,6 +2022,7 @@ async function fetchGstinDetails(gstin, context) {
         address: pastInv.customerAddress || pastInv.address || '',
         state: pastInv.customerState || pastInv.state || '',
         phone: pastInv.customerPhone || pastInv.phone || '',
+        placeOfSupply: pastInv.place_of_supply || pastInv.placeOfSupply || '',
         source: 'invoice_history'
       }, context, 'Invoice History');
       return;
@@ -2003,54 +2054,89 @@ async function fetchGstinDetails(gstin, context) {
       }
     }
 
-    // 4. Offline decode from GSTIN format
-    const info = getGstinInfo(cleanGstin);
+    // 4. Gemini AI lookup if API key configured
+    const geminiKey = state.company?.gemini_api_key || localStorage.getItem('gemini_api_key');
+    if (geminiKey) {
+      try {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `Identify the registered trade or business name and city in India for GSTIN: "${cleanGstin}". Return ONLY JSON: {"name": string, "address": string, "state": string}. If not known with high confidence, return {"name": ""}.` }] }],
+            generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
+          })
+        });
+        if (geminiRes.ok) {
+          const gJson = await geminiRes.json();
+          const gText = gJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (gText) {
+            const parsed = JSON.parse(gText.trim());
+            if (parsed.name && parsed.name.trim()) {
+              applyGstinData({
+                name: parsed.name.trim(),
+                gstin: cleanGstin,
+                address: parsed.address || '',
+                state: parsed.state || '',
+                source: 'gemini_ai'
+              }, context, 'AI Identified');
+              return;
+            }
+          }
+        }
+      } catch (gErr) {
+        console.warn('Gemini GSTIN lookup error:', gErr);
+      }
+    }
+
+    // 5. Offline decode from GSTIN format (State code, POS, PAN entity type)
+    const info = getGstinInfo(cleanGstin) || {
+      state: 'Karnataka',
+      stateCode: cleanGstin.slice(0, 2),
+      pos: 'Karnataka ( 29 )',
+      type: 'Business'
+    };
     const data = {
-      state: info?.state || 'Karnataka',
-      stateCode: info?.stateCode || cleanGstin.slice(0, 2),
-      placeOfSupply: info?.pos || '',
-      entityType: info?.type || 'Business'
+      state: info.state,
+      stateCode: info.stateCode,
+      placeOfSupply: info.pos || '',
+      entityType: info.type || 'Business'
     };
 
-    if (false) {
-      // placeholder
-    } else {
-      // Auto-set state and POS
-      if (context === 'invoice') {
-        const stateEl = document.getElementById('inv-state');
-        if (stateEl && data.state) {
-          stateEl.value = data.state;
-          state.newInvoice = state.newInvoice || {};
-          state.newInvoice.customer = state.newInvoice.customer || {};
-          state.newInvoice.customer.state = data.state;
-        }
-        const posEl = document.getElementById('inv-pos');
-        if (posEl && data.placeOfSupply) {
-          posEl.value = data.placeOfSupply;
-          state.newInvoice = state.newInvoice || {};
-          state.newInvoice.placeOfSupply = data.placeOfSupply;
-        }
-        // If customer name is empty, focus it so user can type the trade name
-        const custInput = document.getElementById('inv-customer');
-        if (custInput && !custInput.value) {
-          custInput.placeholder = "Enter customer name (saved automatically for future)";
-          custInput.focus();
-        }
-      } else if (context === 'customer') {
-        const stateEl = document.getElementById('nc-state');
-        if (stateEl && data.state) stateEl.value = data.state;
-        const nameInput = document.getElementById('nc-name');
-        if (nameInput && !nameInput.value) {
-          nameInput.placeholder = "Enter customer name (saved automatically for future)";
-          nameInput.focus();
-        }
+    // Auto-set state and POS
+    if (context === 'invoice') {
+      const stateEl = document.getElementById('inv-state');
+      if (stateEl && data.state) {
+        stateEl.value = data.state;
+        state.newInvoice = state.newInvoice || {};
+        state.newInvoice.customer = state.newInvoice.customer || {};
+        state.newInvoice.customer.state = data.state;
       }
-      if (statusEl) {
-        statusEl.style.display = 'inline-block';
-        statusEl.style.color = '#2563eb';
-        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType || 'Business'} <span style="font-weight:400;color:var(--color-text-secondary,#64748b);">(New GSTIN - enter name once to remember)</span>`;
-        statusEl.title = `State & entity decoded. Enter Customer Name once to save to database.`;
+      const posEl = document.getElementById('inv-pos');
+      if (posEl && data.placeOfSupply) {
+        posEl.value = data.placeOfSupply;
+        state.newInvoice = state.newInvoice || {};
+        state.newInvoice.placeOfSupply = data.placeOfSupply;
       }
+      // If customer name is empty, focus it so user can type the trade name
+      const custInput = document.getElementById('inv-customer');
+      if (custInput && !custInput.value) {
+        custInput.placeholder = "Enter Customer / Business Name";
+        custInput.focus();
+      }
+    } else if (context === 'customer') {
+      const stateEl = document.getElementById('nc-state');
+      if (stateEl && data.state) stateEl.value = data.state;
+      const nameInput = document.getElementById('nc-name');
+      if (nameInput && !nameInput.value) {
+        nameInput.placeholder = "Enter Customer / Business Name";
+        nameInput.focus();
+      }
+    }
+    if (statusEl) {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.color = '#185FA5';
+      statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType} <span style="font-weight:400;color:var(--color-text-secondary,#64748b);">(New GSTIN - enter name once to remember)</span>`;
+      statusEl.title = `State decoded: ${data.state}. Enter Customer Name once to save to database.`;
     }
   } catch (err) {
     console.error('GSTIN lookup error:', err);
@@ -2431,7 +2517,7 @@ function renderNewInvoice() {
       <div class="form-grid ${showCustomerCard ? 'd-none' : ''}" style="gap:12px">
         <div class="form-group full">
           <label>Customer Name *</label>
-          <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" oninput="state.newInvoice=state.newInvoice||{};state.newInvoice.customer=state.newInvoice.customer||{};state.newInvoice.customer.name=this.value" onchange="selectCustomer(this.value)">
+          <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" oninput="onCustomerInput(this.value)" onchange="selectCustomer(this.value)">
         </div>
         <div class="form-group">
           <label style="display:flex;justify-content:space-between;align-items:center;">
@@ -2563,36 +2649,66 @@ function renderNewInvoice() {
   </div>`;
 }
 
+function onCustomerInput(val) {
+  state.newInvoice = state.newInvoice || {};
+  state.newInvoice.customer = state.newInvoice.customer || {};
+  state.newInvoice.customer.name = val;
+  if (!val || !val.trim()) return;
+  const clean = val.trim().toLowerCase();
+  const match = state.customers.find(x => x.name && x.name.toLowerCase() === clean);
+  if (match) {
+    selectCustomer(match.name);
+    return;
+  }
+  const past = state.invoices.find(i => (i.customer_name || i.customer || '').toLowerCase() === clean);
+  if (past) {
+    selectCustomer(val);
+  }
+}
+
 function selectCustomer(name) {
+  state.newInvoice = state.newInvoice || {
+    invNo: getNextInvNo(),
+    date: today(),
+    items: [],
+    poNo: '',
+    deliveryNote: '',
+    termsOfPayment: 'Immediate',
+    dispatchThrough: '',
+    destination: '',
+    notes: ''
+  };
   if (!name || name.trim() === "") {
     state.newInvoice.customer = null;
     state.editingCustomer = false;
     render();
     return;
   }
-  const c = state.customers.find(x => x.name.toLowerCase() === name.toLowerCase());
+  const cleanName = name.trim().toLowerCase();
+  const c = state.customers.find(x => x.name && x.name.toLowerCase() === cleanName);
   if (c) {
-    state.newInvoice.customer = c;
+    state.newInvoice.customer = { ...c };
     
-    // Auto-populate Place of Supply based on state name
-    const stateMap = {
-      'gujarat': 'Gujarat ( 24 )',
-      'maharashtra': 'Maharashtra ( 27 )',
-      'karnataka': 'Karnataka ( 29 )',
-      'delhi': 'Delhi ( 07 )',
-      'tamil nadu': 'Tamil Nadu ( 33 )',
-      'telangana': 'Telangana ( 36 )',
-      'andhra pradesh': 'Andhra Pradesh ( 37 )',
-      'west bengal': 'West Bengal ( 19 )',
-      'uttar pradesh': 'Uttar Pradesh ( 09 )',
-      'rajasthan': 'Rajasthan ( 08 )'
-    };
-    const key = (c.state || '').toLowerCase().trim();
-    const posVal = stateMap[key] || (c.state ? `${c.state}` : '');
+    // Auto-populate Place of Supply based on state name or code
+    const gCode = (c.gstin || '').slice(0, 2);
+    const posVal = GSTIN_STATE_MAP[gCode]?.pos || (c.state ? `${c.state}` : 'Karnataka ( 29 )');
     state.newInvoice.placeOfSupply = posVal;
   } else {
-    state.newInvoice.customer = { name, address: '', gstin: '', state: 'Karnataka', phone: '' };
-    state.newInvoice.placeOfSupply = 'Karnataka ( 29 )';
+    // Check past invoices for previous details of this customer
+    const pastInv = state.invoices.find(i => (i.customer_name || i.customer || '').toLowerCase() === cleanName);
+    if (pastInv) {
+      state.newInvoice.customer = {
+        name: pastInv.customer_name || pastInv.customer,
+        address: pastInv.customerAddress || pastInv.address || '',
+        gstin: pastInv.gstin || '',
+        state: pastInv.customerState || pastInv.state || 'Karnataka',
+        phone: pastInv.customerPhone || pastInv.phone || ''
+      };
+      state.newInvoice.placeOfSupply = pastInv.place_of_supply || pastInv.placeOfSupply || 'Karnataka ( 29 )';
+    } else {
+      state.newInvoice.customer = { name, address: '', gstin: '', state: 'Karnataka', phone: '' };
+      state.newInvoice.placeOfSupply = 'Karnataka ( 29 )';
+    }
   }
   state.editingCustomer = false;
   render();
