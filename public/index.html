@@ -1657,6 +1657,225 @@ async function submitEditInvoiceDate() {
   }
 }
 
+// ========== GSTIN LOOKUP & AUTO-FILL HELPERS ==========
+const GSTIN_STATE_MAP = {
+  '01': { state: 'Jammu and Kashmir', pos: 'Jammu and Kashmir ( 01 )' },
+  '02': { state: 'Himachal Pradesh', pos: 'Himachal Pradesh ( 02 )' },
+  '03': { state: 'Punjab', pos: 'Punjab ( 03 )' },
+  '04': { state: 'Chandigarh', pos: 'Chandigarh ( 04 )' },
+  '05': { state: 'Uttarakhand', pos: 'Uttarakhand ( 05 )' },
+  '06': { state: 'Haryana', pos: 'Haryana ( 06 )' },
+  '07': { state: 'Delhi', pos: 'Delhi ( 07 )' },
+  '08': { state: 'Rajasthan', pos: 'Rajasthan ( 08 )' },
+  '09': { state: 'Uttar Pradesh', pos: 'Uttar Pradesh ( 09 )' },
+  '10': { state: 'Bihar', pos: 'Bihar ( 10 )' },
+  '11': { state: 'Sikkim', pos: 'Sikkim ( 11 )' },
+  '12': { state: 'Arunachal Pradesh', pos: 'Arunachal Pradesh ( 12 )' },
+  '13': { state: 'Nagaland', pos: 'Nagaland ( 13 )' },
+  '14': { state: 'Manipur', pos: 'Manipur ( 14 )' },
+  '15': { state: 'Mizoram', pos: 'Mizoram ( 15 )' },
+  '16': { state: 'Tripura', pos: 'Tripura ( 16 )' },
+  '17': { state: 'Meghalaya', pos: 'Meghalaya ( 17 )' },
+  '18': { state: 'Assam', pos: 'Assam ( 18 )' },
+  '19': { state: 'West Bengal', pos: 'West Bengal ( 19 )' },
+  '20': { state: 'Jharkhand', pos: 'Jharkhand ( 20 )' },
+  '21': { state: 'Odisha', pos: 'Odisha ( 21 )' },
+  '22': { state: 'Chhattisgarh', pos: 'Chhattisgarh ( 22 )' },
+  '23': { state: 'Madhya Pradesh', pos: 'Madhya Pradesh ( 23 )' },
+  '24': { state: 'Gujarat', pos: 'Gujarat ( 24 )' },
+  '26': { state: 'Dadra and Nagar Haveli and Daman and Diu', pos: 'Dadra and Nagar Haveli and Daman and Diu ( 26 )' },
+  '27': { state: 'Maharashtra', pos: 'Maharashtra ( 27 )' },
+  '28': { state: 'Andhra Pradesh', pos: 'Andhra Pradesh ( 28 )' },
+  '29': { state: 'Karnataka', pos: 'Karnataka ( 29 )' },
+  '30': { state: 'Goa', pos: 'Goa ( 30 )' },
+  '31': { state: 'Lakshadweep', pos: 'Lakshadweep ( 31 )' },
+  '32': { state: 'Kerala', pos: 'Kerala ( 32 )' },
+  '33': { state: 'Tamil Nadu', pos: 'Tamil Nadu ( 33 )' },
+  '34': { state: 'Puducherry', pos: 'Puducherry ( 34 )' },
+  '35': { state: 'Andaman and Nicobar Islands', pos: 'Andaman and Nicobar Islands ( 35 )' },
+  '36': { state: 'Telangana', pos: 'Telangana ( 36 )' },
+  '37': { state: 'Andhra Pradesh', pos: 'Andhra Pradesh ( 37 )' },
+  '38': { state: 'Ladakh', pos: 'Ladakh ( 38 )' },
+  '97': { state: 'Other Territory', pos: 'Other Territory ( 97 )' },
+  '99': { state: 'Centre Jurisdiction', pos: 'Centre Jurisdiction ( 99 )' }
+};
+
+let gstinLookupTimer = null;
+
+function handleGstinInput(val, context, force = false) {
+  if (!val) return;
+  const cleanVal = val.trim().toUpperCase();
+
+  // Instant state detection from 2-digit code
+  if (cleanVal.length >= 2) {
+    const code = cleanVal.slice(0, 2);
+    const info = GSTIN_STATE_MAP[code];
+    if (info) {
+      if (context === 'invoice') {
+        const stateEl = document.getElementById('inv-state');
+        if (stateEl && (!stateEl.value || stateEl.value === 'Karnataka' || stateEl.value !== info.state)) {
+          stateEl.value = info.state;
+          if (state.newInvoice?.customer) state.newInvoice.customer.state = info.state;
+        }
+        const posEl = document.getElementById('inv-pos');
+        if (posEl && (!posEl.value || posEl.value === 'Gujarat ( 24 )' || posEl.value !== info.pos)) {
+          posEl.value = info.pos;
+          if (state.newInvoice) state.newInvoice.placeOfSupply = info.pos;
+        }
+      } else if (context === 'customer') {
+        const stateEl = document.getElementById('nc-state');
+        if (stateEl) stateEl.value = info.state;
+      }
+    }
+  }
+
+  // Check in-memory customers list first for instantaneous auto-fill
+  if (cleanVal.length === 15) {
+    const existing = state.customers.find(c => c.gstin && c.gstin.trim().toUpperCase() === cleanVal);
+    if (existing) {
+      applyGstinData(existing, context, 'Existing Customer');
+      return;
+    }
+  }
+
+  // Trigger server fetch when 15 chars are typed or forced
+  if (cleanVal.length === 15 || force) {
+    if (gstinLookupTimer) clearTimeout(gstinLookupTimer);
+    gstinLookupTimer = setTimeout(() => {
+      fetchGstinDetails(cleanVal, context);
+    }, force ? 0 : 300);
+  }
+}
+
+function applyGstinData(data, context, sourceLabel) {
+  const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
+  if (context === 'invoice') {
+    if (data.name) {
+      const custInput = document.getElementById('inv-customer');
+      if (custInput) custInput.value = data.name;
+      state.newInvoice.customer = state.newInvoice.customer || {};
+      state.newInvoice.customer.name = data.name;
+      state.newInvoice.customer.gstin = data.gstin || '';
+    }
+    if (data.address) {
+      const addrInput = document.getElementById('inv-addr');
+      if (addrInput) addrInput.value = data.address;
+      if (state.newInvoice?.customer) state.newInvoice.customer.address = data.address;
+    }
+    if (data.phone) {
+      const phoneInput = document.getElementById('inv-phone');
+      if (phoneInput) phoneInput.value = data.phone;
+      if (state.newInvoice?.customer) state.newInvoice.customer.phone = data.phone;
+    }
+    if (data.state) {
+      const stateInput = document.getElementById('inv-state');
+      if (stateInput) stateInput.value = data.state;
+      if (state.newInvoice?.customer) state.newInvoice.customer.state = data.state;
+    }
+    if (data.placeOfSupply || data.pos) {
+      const posVal = data.placeOfSupply || data.pos;
+      const posInput = document.getElementById('inv-pos');
+      if (posInput) posInput.value = posVal;
+      state.newInvoice.placeOfSupply = posVal;
+    }
+    if (statusEl) {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.color = '#16a34a';
+      statusEl.innerHTML = `✓ ${data.name || data.state}`;
+    }
+    if (data.name) {
+      showAlert(`Auto-filled: "${data.name}" (${sourceLabel || 'Matched'})`, 'success');
+    }
+  } else if (context === 'customer') {
+    if (data.name) {
+      const nameInput = document.getElementById('nc-name');
+      if (nameInput) nameInput.value = data.name;
+    }
+    if (data.address) {
+      const addrInput = document.getElementById('nc-addr');
+      if (addrInput) addrInput.value = data.address;
+    }
+    if (data.phone) {
+      const phoneInput = document.getElementById('nc-phone');
+      if (phoneInput) phoneInput.value = data.phone;
+    }
+    if (data.email) {
+      const emailInput = document.getElementById('nc-email');
+      if (emailInput) emailInput.value = data.email;
+    }
+    if (data.state) {
+      const stateInput = document.getElementById('nc-state');
+      if (stateInput) stateInput.value = data.state;
+    }
+    if (statusEl) {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.color = '#16a34a';
+      statusEl.innerHTML = `✓ ${data.name || data.state}`;
+    }
+    if (data.name) {
+      showAlert(`Auto-filled: "${data.name}" (${sourceLabel || 'Matched'})`, 'success');
+    }
+  }
+}
+
+async function fetchGstinDetails(gstin, context) {
+  if (!gstin) return;
+  const cleanGstin = gstin.trim().toUpperCase();
+  if (cleanGstin.length < 2) return;
+
+  const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
+  const btnEl = document.getElementById(context === 'invoice' ? 'inv-gstin-btn' : 'nc-gstin-btn');
+
+  if (statusEl) {
+    statusEl.style.display = 'inline-block';
+    statusEl.style.color = '#0284c7';
+    statusEl.innerHTML = '<i class="ti ti-loader"></i> Fetching...';
+  }
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="ti ti-loader"></i>';
+  }
+
+  try {
+    const res = await apiFetch(`/api/gstin-lookup/${encodeURIComponent(cleanGstin)}`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    if (data.name) {
+      applyGstinData(data, context, data.source === 'customer_db' ? 'Customer DB' : (data.source === 'invoice_history' ? 'Invoice History' : 'Registry Lookup'));
+    } else {
+      // Auto-set state and POS
+      if (context === 'invoice') {
+        const stateEl = document.getElementById('inv-state');
+        if (stateEl && data.state) stateEl.value = data.state;
+        const posEl = document.getElementById('inv-pos');
+        if (posEl && data.placeOfSupply) posEl.value = data.placeOfSupply;
+      } else if (context === 'customer') {
+        const stateEl = document.getElementById('nc-state');
+        if (stateEl && data.state) stateEl.value = data.state;
+      }
+      if (statusEl) {
+        statusEl.style.display = 'inline-block';
+        statusEl.style.color = '#0284c7';
+        statusEl.innerHTML = `✓ State: ${data.state}`;
+      }
+      showAlert(`Detected State: ${data.state} (Code ${data.stateCode}). Enter business name to complete.`, 'info');
+    }
+  } catch (err) {
+    console.error('GSTIN lookup error:', err);
+    if (statusEl) {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.color = '#dc2626';
+      statusEl.innerHTML = '⚠ Lookup error';
+    }
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = '<i class="ti ti-refresh" style="font-size:12px;"></i> Fetch';
+    }
+  }
+}
+
 function showAlert(msg, type='success') { 
   state.alert = { msg, type }; 
   setTimeout(() => { 
@@ -2018,17 +2237,25 @@ function renderNewInvoice() {
           <label>Customer Name *</label>
           <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" onchange="selectCustomer(this.value)">
         </div>
-        <div class="form-group full">
-          <label>Billing Address</label>
-          <input type="text" id="inv-addr" value="${inv.customer?.address||''}" placeholder="Address">
+        <div class="form-group">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            <span>GSTIN/UIN</span>
+            <span id="inv-gstin-status" style="font-size:11px;text-transform:none;font-weight:600;display:none;"></span>
+          </label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="text" id="inv-gstin" value="${inv.customer?.gstin||''}" placeholder="29AAAAA0000A1Z5" style="text-transform:uppercase;padding-right:75px;" maxlength="15" oninput="handleGstinInput(this.value, 'invoice')" onchange="handleGstinInput(this.value, 'invoice', true)">
+            <button type="button" id="inv-gstin-btn" class="btn btn-sm btn-secondary" onclick="fetchGstinDetails(document.getElementById('inv-gstin').value, 'invoice')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 8px;font-size:11px;border-radius:8px;background:var(--color-background-secondary,#f1f5f9);color:#185FA5;border:1px solid var(--color-border-secondary,#cbd5e1);font-weight:700;display:flex;align-items:center;gap:4px;" title="Fetch business details from GSTIN">
+              <i class="ti ti-refresh" style="font-size:12px;"></i> Fetch
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label>PHONE</label>
           <input type="text" id="inv-phone" value="${inv.customer?.phone||''}" placeholder="Phone number">
         </div>
-        <div class="form-group">
-          <label>GSTIN/UIN</label>
-          <input type="text" id="inv-gstin" value="${inv.customer?.gstin||''}" placeholder="29AAAAA0000A1Z5">
+        <div class="form-group full">
+          <label>Billing Address</label>
+          <input type="text" id="inv-addr" value="${inv.customer?.address||''}" placeholder="Address">
         </div>
         <div class="form-group full">
           <label>State</label>
@@ -3642,7 +3869,18 @@ function showAddCustomer() {
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Customer Name *</label><input type="text" id="nc-name" placeholder="Business name"></div>
-      <div class="form-group"><label>GSTIN/UIN *</label><input type="text" id="nc-gstin" placeholder="29AAAAA0000A1Z5"></div>
+      <div class="form-group">
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          <span>GSTIN/UIN *</span>
+          <span id="nc-gstin-status" style="font-size:11px;text-transform:none;font-weight:600;display:none;"></span>
+        </label>
+        <div style="position:relative;display:flex;align-items:center;">
+          <input type="text" id="nc-gstin" placeholder="29AAAAA0000A1Z5" style="text-transform:uppercase;padding-right:75px;" maxlength="15" oninput="handleGstinInput(this.value, 'customer')" onchange="handleGstinInput(this.value, 'customer', true)">
+          <button type="button" id="nc-gstin-btn" class="btn btn-sm btn-secondary" onclick="fetchGstinDetails(document.getElementById('nc-gstin').value, 'customer')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 8px;font-size:11px;border-radius:8px;background:var(--color-background-secondary,#f1f5f9);color:#185FA5;border:1px solid var(--color-border-secondary,#cbd5e1);font-weight:700;display:flex;align-items:center;gap:4px;" title="Fetch business details from GSTIN">
+            <i class="ti ti-refresh" style="font-size:12px;"></i> Fetch
+          </button>
+        </div>
+      </div>
       <div class="form-group full"><label>Address</label><input type="text" id="nc-addr" placeholder="Full address"></div>
       <div class="form-group"><label>State</label><input type="text" id="nc-state" value="Karnataka"></div>
       <div class="form-group"><label>Phone</label><input type="text" id="nc-phone" placeholder="10-digit number"></div>

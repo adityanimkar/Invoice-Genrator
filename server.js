@@ -466,6 +466,191 @@ app.put('/api/invoices/:id/date', async (req, res) => {
   }
 });
 
+// ========== GSTIN LOOKUP API ==========
+const GSTIN_STATE_MAP = {
+  '01': { state: 'Jammu and Kashmir', pos: 'Jammu and Kashmir ( 01 )' },
+  '02': { state: 'Himachal Pradesh', pos: 'Himachal Pradesh ( 02 )' },
+  '03': { state: 'Punjab', pos: 'Punjab ( 03 )' },
+  '04': { state: 'Chandigarh', pos: 'Chandigarh ( 04 )' },
+  '05': { state: 'Uttarakhand', pos: 'Uttarakhand ( 05 )' },
+  '06': { state: 'Haryana', pos: 'Haryana ( 06 )' },
+  '07': { state: 'Delhi', pos: 'Delhi ( 07 )' },
+  '08': { state: 'Rajasthan', pos: 'Rajasthan ( 08 )' },
+  '09': { state: 'Uttar Pradesh', pos: 'Uttar Pradesh ( 09 )' },
+  '10': { state: 'Bihar', pos: 'Bihar ( 10 )' },
+  '11': { state: 'Sikkim', pos: 'Sikkim ( 11 )' },
+  '12': { state: 'Arunachal Pradesh', pos: 'Arunachal Pradesh ( 12 )' },
+  '13': { state: 'Nagaland', pos: 'Nagaland ( 13 )' },
+  '14': { state: 'Manipur', pos: 'Manipur ( 14 )' },
+  '15': { state: 'Mizoram', pos: 'Mizoram ( 15 )' },
+  '16': { state: 'Tripura', pos: 'Tripura ( 16 )' },
+  '17': { state: 'Meghalaya', pos: 'Meghalaya ( 17 )' },
+  '18': { state: 'Assam', pos: 'Assam ( 18 )' },
+  '19': { state: 'West Bengal', pos: 'West Bengal ( 19 )' },
+  '20': { state: 'Jharkhand', pos: 'Jharkhand ( 20 )' },
+  '21': { state: 'Odisha', pos: 'Odisha ( 21 )' },
+  '22': { state: 'Chhattisgarh', pos: 'Chhattisgarh ( 22 )' },
+  '23': { state: 'Madhya Pradesh', pos: 'Madhya Pradesh ( 23 )' },
+  '24': { state: 'Gujarat', pos: 'Gujarat ( 24 )' },
+  '26': { state: 'Dadra and Nagar Haveli and Daman and Diu', pos: 'Dadra and Nagar Haveli and Daman and Diu ( 26 )' },
+  '27': { state: 'Maharashtra', pos: 'Maharashtra ( 27 )' },
+  '28': { state: 'Andhra Pradesh', pos: 'Andhra Pradesh ( 28 )' },
+  '29': { state: 'Karnataka', pos: 'Karnataka ( 29 )' },
+  '30': { state: 'Goa', pos: 'Goa ( 30 )' },
+  '31': { state: 'Lakshadweep', pos: 'Lakshadweep ( 31 )' },
+  '32': { state: 'Kerala', pos: 'Kerala ( 32 )' },
+  '33': { state: 'Tamil Nadu', pos: 'Tamil Nadu ( 33 )' },
+  '34': { state: 'Puducherry', pos: 'Puducherry ( 34 )' },
+  '35': { state: 'Andaman and Nicobar Islands', pos: 'Andaman and Nicobar Islands ( 35 )' },
+  '36': { state: 'Telangana', pos: 'Telangana ( 36 )' },
+  '37': { state: 'Andhra Pradesh', pos: 'Andhra Pradesh ( 37 )' },
+  '38': { state: 'Ladakh', pos: 'Ladakh ( 38 )' },
+  '97': { state: 'Other Territory', pos: 'Other Territory ( 97 )' },
+  '99': { state: 'Centre Jurisdiction', pos: 'Centre Jurisdiction ( 99 )' }
+};
+
+const PAN_ENTITY_MAP = {
+  'C': 'Company (Pvt Ltd / Ltd)',
+  'P': 'Individual / Proprietorship',
+  'H': 'HUF (Hindu Undivided Family)',
+  'F': 'Partnership Firm / LLP',
+  'A': 'Association of Persons (AOP)',
+  'T': 'Trust',
+  'B': 'Body of Individuals (BOI)',
+  'L': 'Local Authority',
+  'J': 'Artificial Juridical Person',
+  'G': 'Government Agency'
+};
+
+app.get('/api/gstin-lookup/:gstin', async (req, res) => {
+  const rawGstin = (req.params.gstin || '').trim().toUpperCase();
+  if (!rawGstin || rawGstin.length < 2) {
+    return res.status(400).send('Invalid GSTIN parameter.');
+  }
+
+  const stateCode = rawGstin.slice(0, 2);
+  const stateMeta = GSTIN_STATE_MAP[stateCode] || { state: 'Karnataka', pos: `Karnataka ( ${stateCode} )` };
+  const pan = rawGstin.length >= 12 ? rawGstin.slice(2, 12) : '';
+  const entityChar = pan.length >= 4 ? pan[3] : '';
+  const entityType = PAN_ENTITY_MAP[entityChar] || 'Business Entity';
+
+  try {
+    // 1. Check local customers table
+    const custCheck = await db.query(
+      'SELECT * FROM customers WHERE UPPER(gstin) = $1 LIMIT 1',
+      [rawGstin]
+    );
+    if (custCheck.rows.length > 0) {
+      const c = custCheck.rows[0];
+      return res.json({
+        found: true,
+        source: 'customer_db',
+        gstin: rawGstin,
+        name: c.name,
+        address: c.address || '',
+        phone: c.phone || '',
+        email: c.email || '',
+        state: c.state || stateMeta.state,
+        stateCode: stateCode,
+        placeOfSupply: stateMeta.pos,
+        pan,
+        entityType
+      });
+    }
+
+    // 2. Check previous invoices
+    const invCheck = await db.query(
+      'SELECT customer_name, destination, place_of_supply FROM invoices WHERE UPPER(gstin) = $1 ORDER BY id DESC LIMIT 1',
+      [rawGstin]
+    );
+    if (invCheck.rows.length > 0) {
+      const inv = invCheck.rows[0];
+      return res.json({
+        found: true,
+        source: 'invoice_history',
+        gstin: rawGstin,
+        name: inv.customer_name,
+        address: inv.destination || '',
+        phone: '',
+        email: '',
+        state: stateMeta.state,
+        stateCode: stateCode,
+        placeOfSupply: inv.place_of_supply || stateMeta.pos,
+        pan,
+        entityType
+      });
+    }
+
+    // 3. If Gemini AI is configured, query AI for registered business details
+    let geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      const coRes = await db.query('SELECT gemini_api_key FROM company_profile LIMIT 1');
+      if (coRes.rows.length > 0 && coRes.rows[0].gemini_api_key) {
+        geminiKey = coRes.rows[0].gemini_api_key.trim();
+      }
+    }
+
+    if (geminiKey && rawGstin.length === 15) {
+      try {
+        const prompt = `Identify Indian registered business details for GSTIN: "${rawGstin}". State code is ${stateCode} (${stateMeta.state}), PAN is ${pan} (${entityType}). Return a JSON object with: { "name": "Exact Legal or Trade Business Name if known or empty", "address": "Registered principal office address / city / state if known or empty", "pincode": "6 digit pincode if known or empty" }. Output pure raw JSON only with no markdown tags.`;
+        const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`;
+        const aiRes = await fetch(aiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+        if (aiRes.ok) {
+          const aiJson = await aiRes.json();
+          const text = aiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const parsed = JSON.parse(text);
+            if (parsed.name && parsed.name.trim() && !parsed.name.toLowerCase().includes('unknown')) {
+              return res.json({
+                found: true,
+                source: 'ai_registry',
+                gstin: rawGstin,
+                name: parsed.name.trim(),
+                address: parsed.address || '',
+                phone: '',
+                email: '',
+                state: stateMeta.state,
+                stateCode: stateCode,
+                placeOfSupply: stateMeta.pos,
+                pan,
+                entityType
+              });
+            }
+          }
+        }
+      } catch (aiErr) {
+        console.warn('AI GSTIN lookup skipped:', aiErr.message);
+      }
+    }
+
+    // 4. Return decoded metadata from GSTIN
+    return res.json({
+      found: false,
+      source: 'gstin_decoder',
+      gstin: rawGstin,
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      state: stateMeta.state,
+      stateCode: stateCode,
+      placeOfSupply: stateMeta.pos,
+      pan,
+      entityType
+    });
+  } catch (err) {
+    console.error('Error in gstin-lookup:', err);
+    res.status(500).send('Database error looking up GSTIN.');
+  }
+});
+
 // Start listening
 if (require.main === module) {
   app.listen(PORT, () => {
