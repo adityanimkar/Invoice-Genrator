@@ -436,6 +436,36 @@ app.put('/api/invoices/:id/status', async (req, res) => {
   }
 });
 
+// ========== UPDATE INVOICE DATE API ==========
+app.put('/api/invoices/:id/date', async (req, res) => {
+  const { id } = req.params;
+  const { date, journeyDate } = req.body;
+  if (!date || typeof date !== 'string') {
+    return res.status(400).send('Invoice date is required.');
+  }
+  try {
+    let result;
+    if (journeyDate !== undefined) {
+      result = await db.query(
+        'UPDATE invoices SET date = $1, journey_date = $2 WHERE id = $3 RETURNING *',
+        [String(date).trim(), journeyDate ? String(journeyDate).trim() : null, id]
+      );
+    } else {
+      result = await db.query(
+        'UPDATE invoices SET date = $1 WHERE id = $2 RETURNING *',
+        [String(date).trim(), id]
+      );
+    }
+    if (result.rows.length === 0) {
+      return res.status(404).send('Invoice not found.');
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating invoice date:', err);
+    res.status(500).send('Database error updating invoice date.');
+  }
+});
+
 // Start listening
 if (require.main === module) {
   app.listen(PORT, () => {
