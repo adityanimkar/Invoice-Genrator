@@ -1319,7 +1319,7 @@ function updateThemeIcons() {
 initTheme();
 
 // ========== DEFAULT EMBEDDED DATASET (OFFLINE FIRST) ==========
-const DEFAULT_DATA = {"company":{"id":1,"name":"sjhad","address":"HSR Layout, Bangalore","gstin":"29AACCT3705E000","state":"Karnataka","state_code":"29","phone":"+91 878 8789 8789","email":"contact@happyholidays.com","bank_name":"ICICI Bank","bank_branch":"Surat","bank_acc_no":"2715500356","bank_ifsc":"ICIC0002715","bank_upi_id":"happyholidays@icici","terms":"Term 1\nTerm 2","contact_person":"Mr. Abhirati Jani","logo_url":"","logo_size":85,"gemini_api_key":"","gstin_api_key":null},"customers":[{"id":1,"name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","address":"12th Cross, Bangalore","state":"Karnataka","phone":"9876543210","email":"kiran@example.com"},{"id":2,"name":"Raj Constructions","gstin":"29AABCR1234D1Z1","address":"MG Road, Bangalore","state":"Karnataka","phone":"9876543211","email":"raj@example.com"},{"id":3,"name":"Metro Builders","gstin":"29AABCM5678G1Z2","address":"Whitefield, Bangalore","state":"Karnataka","phone":"9876543212","email":"metro@example.com"},{"id":4,"name":"City Corp","gstin":"29AABCC9012H1Z3","address":"Bangalore","state":"Karnataka","phone":"","email":""},{"id":5,"name":"Xyz","gstin":"","address":"","state":"Karnataka","phone":null,"email":null},{"id":6,"name":"sib EERE","gstin":"","address":"","state":"Karnataka","phone":"","email":""}],"products":[{"id":1,"name":"12MM**","hsn":"1005","unit":"No","rate":"500.00","gst_rate":18},{"id":2,"name":"6MM TMT Bar","hsn":"7214","unit":"Kg","rate":"65.00","gst_rate":18},{"id":3,"name":"OPC Cement 53 Grade","hsn":"2523","unit":"Bag","rate":"380.00","gst_rate":28},{"id":4,"name":"River Sand","hsn":"2505","unit":"Ton","rate":"1800.00","gst_rate":5},{"id":5,"name":"abc","hsn":"123`","unit":"12","rate":"12.00","gst_rate":18}],"invoices":[{"id":"SHB/464/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"23-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/463/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"17-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/462/20","date":"11-Jun-26","customer_name":"sib EERE","gstin":"","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"paid","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"Ts \\ i i i","hsn":"","qty":5,"unit":"No","rate":8,"gstRate":18,"amount":40},{"name":"i PEE £5 i","hsn":"","qty":5,"unit":"No","rate":5,"gstRate":18,"amount":25}]},{"id":"SHB/461/20","date":"9-Jun-26","customer_name":"Xyz","gstin":"","taxable":"0.00","cgst":"0.00","sgst":"0.00","igst":"0.00","total":"0.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"\nMcb 2 pole ","hsn":"694443","qty":1,"unit":"No","rate":0,"gstRate":18,"amount":0}]},{"id":"SHB/460/20","date":"9-Jun-26","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"100.00","cgst":"0.00","sgst":"0.00","igst":"18.00","total":"118.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"da","hsn":"dsa","qty":1,"unit":"No","rate":100,"gstRate":18,"amount":100}]},{"id":"SHB/459/20","date":"26-Dec-20","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"22000.00","cgst":"1980.00","sgst":"1980.00","igst":"0.00","total":"25960.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":"10-Apr-2024","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":65,"gstRate":18,"amount":13000},{"name":"OPC Cement 53 Grade","hsn":"2523","qty":23.684,"unit":"Bag","rate":380,"gstRate":18,"amount":9000}]},{"id":"SHB/458/20","date":"24-Dec-20","customer_name":"Metro Builders","gstin":"29AABCM5678G1Z2","taxable":"8500.00","cgst":"765.00","sgst":"765.00","igst":"0.00","total":"10030.00","status":"pending","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":17,"unit":"No","rate":500,"gstRate":18,"amount":8500}]},{"id":"SHB/457/20","date":"22-Dec-20","customer_name":"Raj Constructions","gstin":"29AABCR1234D1Z1","taxable":"12000.00","cgst":"1080.00","sgst":"1080.00","igst":"0.00","total":"14160.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":60,"gstRate":18,"amount":12000}]},{"id":"SHB/456/20","date":"20-Dec-20","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"3500.00","cgst":"315.00","sgst":"315.00","igst":"0.00","total":"4130.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":7,"unit":"No","rate":500,"gstRate":18,"amount":3500}]}]};
+const DEFAULT_DATA = {"company":{"id":1,"name":"sjhad","address":"HSR Layout, Bangalore","gstin":"29AACCT3705E000","state":"Karnataka","state_code":"29","phone":"+91 878 8789 8789","email":"contact@happyholidays.com","bank_name":"ICICI Bank","bank_branch":"Surat","bank_acc_no":"2715500356","bank_ifsc":"ICIC0002715","bank_upi_id":"happyholidays@icici","terms":"Term 1\nTerm 2","contact_person":"Mr. Abhirati Jani","logo_url":"","logo_size":85,"gemini_api_key":"","gstin_api_key":"gak_1c0be2e85f904483aa171f0bde46a225"},"customers":[{"id":1,"name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","address":"12th Cross, Bangalore","state":"Karnataka","phone":"9876543210","email":"kiran@example.com"},{"id":2,"name":"Raj Constructions","gstin":"29AABCR1234D1Z1","address":"MG Road, Bangalore","state":"Karnataka","phone":"9876543211","email":"raj@example.com"},{"id":3,"name":"Metro Builders","gstin":"29AABCM5678G1Z2","address":"Whitefield, Bangalore","state":"Karnataka","phone":"9876543212","email":"metro@example.com"},{"id":4,"name":"City Corp","gstin":"29AABCC9012H1Z3","address":"Bangalore","state":"Karnataka","phone":"","email":""},{"id":5,"name":"Xyz","gstin":"","address":"","state":"Karnataka","phone":null,"email":null},{"id":6,"name":"sib EERE","gstin":"","address":"","state":"Karnataka","phone":"","email":""}],"products":[{"id":1,"name":"12MM**","hsn":"1005","unit":"No","rate":"500.00","gst_rate":18},{"id":2,"name":"6MM TMT Bar","hsn":"7214","unit":"Kg","rate":"65.00","gst_rate":18},{"id":3,"name":"OPC Cement 53 Grade","hsn":"2523","unit":"Bag","rate":"380.00","gst_rate":28},{"id":4,"name":"River Sand","hsn":"2505","unit":"Ton","rate":"1800.00","gst_rate":5},{"id":5,"name":"abc","hsn":"123`","unit":"12","rate":"12.00","gst_rate":18}],"invoices":[{"id":"SHB/464/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"23-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/463/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"17-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/462/20","date":"11-Jun-26","customer_name":"sib EERE","gstin":"","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"paid","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"Ts \\ i i i","hsn":"","qty":5,"unit":"No","rate":8,"gstRate":18,"amount":40},{"name":"i PEE £5 i","hsn":"","qty":5,"unit":"No","rate":5,"gstRate":18,"amount":25}]},{"id":"SHB/461/20","date":"9-Jun-26","customer_name":"Xyz","gstin":"","taxable":"0.00","cgst":"0.00","sgst":"0.00","igst":"0.00","total":"0.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"\nMcb 2 pole ","hsn":"694443","qty":1,"unit":"No","rate":0,"gstRate":18,"amount":0}]},{"id":"SHB/460/20","date":"9-Jun-26","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"100.00","cgst":"0.00","sgst":"0.00","igst":"18.00","total":"118.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"da","hsn":"dsa","qty":1,"unit":"No","rate":100,"gstRate":18,"amount":100}]},{"id":"SHB/459/20","date":"26-Dec-20","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"22000.00","cgst":"1980.00","sgst":"1980.00","igst":"0.00","total":"25960.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":"10-Apr-2024","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":65,"gstRate":18,"amount":13000},{"name":"OPC Cement 53 Grade","hsn":"2523","qty":23.684,"unit":"Bag","rate":380,"gstRate":18,"amount":9000}]},{"id":"SHB/458/20","date":"24-Dec-20","customer_name":"Metro Builders","gstin":"29AABCM5678G1Z2","taxable":"8500.00","cgst":"765.00","sgst":"765.00","igst":"0.00","total":"10030.00","status":"pending","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":17,"unit":"No","rate":500,"gstRate":18,"amount":8500}]},{"id":"SHB/457/20","date":"22-Dec-20","customer_name":"Raj Constructions","gstin":"29AABCR1234D1Z1","taxable":"12000.00","cgst":"1080.00","sgst":"1080.00","igst":"0.00","total":"14160.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":60,"gstRate":18,"amount":12000}]},{"id":"SHB/456/20","date":"20-Dec-20","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"3500.00","cgst":"315.00","sgst":"315.00","igst":"0.00","total":"4130.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":7,"unit":"No","rate":500,"gstRate":18,"amount":3500}]}]};
 
 // ========== STATE ==========
 const state = {
@@ -1354,6 +1354,14 @@ const LocalStorageStore = {
     }
     if (!localStorage.getItem(this.KEYS.COMPANY)) {
       localStorage.setItem(this.KEYS.COMPANY, JSON.stringify(DEFAULT_DATA.company));
+    } else {
+      try {
+        const co = JSON.parse(localStorage.getItem(this.KEYS.COMPANY));
+        if (co && (!co.gstin_api_key || co.gstin_api_key === 'null' || !co.gstin_api_key.trim())) {
+          co.gstin_api_key = DEFAULT_DATA.company.gstin_api_key;
+          localStorage.setItem(this.KEYS.COMPANY, JSON.stringify(co));
+        }
+      } catch (e) {}
     }
   },
   getInvoices() {
@@ -2028,29 +2036,87 @@ async function fetchGstinDetails(gstin, context) {
       return;
     }
 
-    // 3. Online GSP lookup if API key configured
-    const gspKey = state.company?.gstin_api_key;
-    if (gspKey) {
+    // 3. Online GST Portal / GSP lookup using gstinapi.in or gstincheck
+    const gstinKey = state.company?.gstin_api_key || localStorage.getItem('gstin_api_key') || 'gak_1c0be2e85f904483aa171f0bde46a225';
+    if (gstinKey) {
       try {
-        const gspRes = await fetch(`https://sheet.gstincheck.co.in/check/${encodeURIComponent(gspKey)}/${encodeURIComponent(cleanGstin)}`);
-        if (gspRes.ok) {
-          const gspData = await gspRes.json();
-          if (gspData.flag && gspData.data) {
-            const d = gspData.data;
-            const tradeName = d.tradeNam || d.lgnm || '';
-            const addr = d.pradr?.addr ? `${d.pradr.addr.bno||''} ${d.pradr.addr.st||''}, ${d.pradr.addr.loc||''}, ${d.pradr.addr.pncd||''}`.trim() : '';
+        let apiData = null;
+
+        // Try serverless Worker proxy first (bypasses browser CORS cleanly)
+        try {
+          const proxyRes = await fetch(`/api/lookup-gstin?gstin=${encodeURIComponent(cleanGstin)}&apiKey=${encodeURIComponent(gstinKey)}`);
+          if (proxyRes.ok) {
+            apiData = await proxyRes.json();
+          }
+        } catch (proxyErr) {
+          console.warn('Proxy lookup failed:', proxyErr);
+        }
+
+        // Direct fetch fallback if running locally or offline dev
+        if (!apiData) {
+          try {
+            if (gstinKey.startsWith('gak_')) {
+              const directRes = await fetch(`https://www.gstinapi.in/v1/gstin/${encodeURIComponent(cleanGstin)}`, {
+                headers: { 'x-api-key': gstinKey, 'Accept': 'application/json' }
+              });
+              if (directRes.ok) apiData = await directRes.json();
+            } else {
+              const directRes = await fetch(`https://sheet.gstincheck.co.in/check/${encodeURIComponent(gstinKey)}/${encodeURIComponent(cleanGstin)}`);
+              if (directRes.ok) apiData = await directRes.json();
+            }
+          } catch (dErr) {
+            console.warn('Direct fetch error:', dErr);
+          }
+        }
+
+        // Parse response from gstinapi.in or sheet.gstincheck
+        if (apiData) {
+          const d = apiData.data || apiData;
+          if (d.trade_name || d.legal_name || d.lgnm || d.tradeNam) {
+            const custName = d.trade_name || d.tradeNam || d.legal_name || d.lgnm || '';
+            let fullAddr = d.address || '';
+            if (!fullAddr && d.pradr?.addr) {
+              const a = d.pradr.addr;
+              fullAddr = `${a.bno||''} ${a.st||''}, ${a.loc||''}, ${a.pncd||''}`.trim();
+            }
+            if (d.pincode && !fullAddr.includes(d.pincode)) {
+              fullAddr += (fullAddr ? ', ' : '') + d.pincode;
+            }
+            const stateName = d.address_details?.state || d.pradr?.addr?.stcd || GSTIN_STATE_MAP[cleanGstin.slice(0, 2)]?.state || '';
+            const stateCode = d.state_code || cleanGstin.slice(0, 2);
+            const posStr = GSTIN_STATE_MAP[stateCode]?.pos || (stateName ? `${stateName} ( ${stateCode} )` : '');
+
             applyGstinData({
-              name: tradeName,
+              name: custName,
               gstin: cleanGstin,
-              address: addr,
-              state: d.pradr?.addr?.stcd || '',
-              source: 'gstin_provider'
-            }, context, 'GST Portal Live');
+              address: fullAddr,
+              state: stateName,
+              placeOfSupply: posStr,
+              source: 'gstin_api'
+            }, context, `Live GST (${d.status || 'Active'})`);
+
+            // Also save/update in local customer database immediately so subsequent auto-fills are instant
+            const existingIdx = state.customers.findIndex(c => c.gstin && c.gstin.trim().toUpperCase() === cleanGstin);
+            const custObj = {
+              id: existingIdx >= 0 ? state.customers[existingIdx].id : Date.now(),
+              name: custName,
+              gstin: cleanGstin,
+              address: fullAddr,
+              state: stateName,
+              phone: existingIdx >= 0 ? (state.customers[existingIdx].phone || '') : '',
+              email: existingIdx >= 0 ? (state.customers[existingIdx].email || '') : ''
+            };
+            if (existingIdx >= 0) {
+              state.customers[existingIdx] = custObj;
+            } else {
+              state.customers.push(custObj);
+            }
+            LocalStorageStore.saveCustomers(state.customers);
             return;
           }
         }
       } catch (gspErr) {
-        console.warn('GSP live lookup error:', gspErr);
+        console.warn('Live GST lookup error:', gspErr);
       }
     }
 
@@ -4574,10 +4640,10 @@ function renderSettings() {
             </p>
           </div>
           <div class="form-group full">
-            <label>GSTIN API Key (Optional, for direct live GST portal verification)</label>
-            <input type="password" id="s-gstin-api-key" value="${co.gstin_api_key || co.gstinApiKey || ''}" placeholder="Enter API Key from gstincheck.co.in">
+            <label>GSTIN API Key (for Live GST Portal Verification & Auto-Fill)</label>
+            <input type="text" id="s-gstin-api-key" value="${co.gstin_api_key || co.gstinApiKey || 'gak_1c0be2e85f904483aa171f0bde46a225'}" placeholder="e.g. gak_... or gstincheck API Key">
             <p style="font-size:10px;color:var(--color-text-secondary,#666);margin-top:2px;">
-              Optional: For direct live government portal lookups. Get 20 free live requests from <a href="https://gstincheck.co.in/" target="_blank" style="color:#0076f6;">gstincheck.co.in</a>.
+              Configured key: <code>gak_1c0be2e85f904483aa171f0bde46a225</code> (GSTINAPI.in). Automatically fetches Trade Name, Legal Name, and full Registered Address directly from the GST Network.
             </p>
           </div>
         </div>
