@@ -1880,10 +1880,9 @@ function handleGstinInput(val, context, force = false) {
         if (stateEl) stateEl.value = info.state;
       }
       const statusEl = document.getElementById(context === 'invoice' ? 'inv-gstin-status' : 'nc-gstin-status');
-      if (statusEl && cleanVal.length < 15) {
-        statusEl.style.display = 'inline-block';
-        statusEl.style.color = '#2563eb';
-        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${info.state} (${code})`;
+      if (statusEl) {
+        statusEl.style.display = 'none';
+        statusEl.innerHTML = '';
       }
     }
   }
@@ -1951,11 +1950,11 @@ function applyGstinData(data, context, sourceLabel) {
       state.newInvoice.placeOfSupply = posVal;
     }
     if (statusEl) {
-      statusEl.style.display = 'inline-block';
-      statusEl.style.color = '#16a34a';
-      const labelText = data.name ? `${data.name} (${data.state || ''})` : (data.state || '');
-      statusEl.innerHTML = `<i class="ti ti-check"></i> Found: ${labelText}`;
-      statusEl.title = `${data.name || ''} - ${data.address || ''} [${sourceLabel || 'Matched'}]`;
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
+    }
+    if (data.name) {
+      showAlert(`✓ GST details applied: ${data.name}`, 'success');
     }
   } else if (context === 'customer') {
     if (data.name) {
@@ -1979,11 +1978,11 @@ function applyGstinData(data, context, sourceLabel) {
       if (stateInput) stateInput.value = data.state;
     }
     if (statusEl) {
-      statusEl.style.display = 'inline-block';
-      statusEl.style.color = '#16a34a';
-      const labelText = data.name ? `${data.name} (${data.state || ''})` : (data.state || '');
-      statusEl.innerHTML = `<i class="ti ti-check"></i> Found: ${labelText}`;
-      statusEl.title = `${data.name || ''} - ${data.address || ''} [${sourceLabel || 'Matched'}]`;
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
+    }
+    if (data.name) {
+      showAlert(`✓ GST details applied: ${data.name}`, 'success');
     }
   }
 }
@@ -2199,17 +2198,14 @@ async function fetchGstinDetails(gstin, context) {
       }
     }
     if (statusEl) {
-      statusEl.style.display = 'inline-block';
-      statusEl.style.color = '#185FA5';
-      statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType} <span style="font-weight:400;color:var(--color-text-secondary,#64748b);">(New GSTIN - enter name once to remember)</span>`;
-      statusEl.title = `State decoded: ${data.state}. Enter Customer Name once to save to database.`;
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
     }
   } catch (err) {
     console.error('GSTIN lookup error:', err);
     if (statusEl) {
-      statusEl.style.display = 'inline-block';
-      statusEl.style.color = '#dc2626';
-      statusEl.innerHTML = '⚠ Lookup error';
+      statusEl.style.display = 'none';
+      statusEl.innerHTML = '';
     }
   } finally {
     if (btnEl) {
@@ -2586,10 +2582,7 @@ function renderNewInvoice() {
           <input type="text" id="inv-customer" value="${inv.customer?.name||''}" placeholder="Select or type customer" list="customer-list" oninput="onCustomerInput(this.value)" onchange="selectCustomer(this.value)">
         </div>
         <div class="form-group">
-          <label style="display:flex;justify-content:space-between;align-items:center;">
-            <span>GSTIN/UIN</span>
-            <span id="inv-gstin-status" style="font-size:11px;text-transform:none;font-weight:600;display:none;"></span>
-          </label>
+          <label>GSTIN/UIN <span id="inv-gstin-status" style="display:none;"></span></label>
           <div style="position:relative;display:flex;align-items:center;">
             <input type="text" id="inv-gstin" value="${inv.customer?.gstin||''}" placeholder="29AAAAA0000A1Z5" style="text-transform:uppercase;padding-right:75px;" maxlength="15" oninput="handleGstinInput(this.value, 'invoice')" onchange="handleGstinInput(this.value, 'invoice', true)">
             <button type="button" id="inv-gstin-btn" class="btn btn-sm btn-secondary" onclick="fetchGstinDetails(document.getElementById('inv-gstin').value, 'invoice')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 8px;font-size:11px;border-radius:8px;background:var(--color-background-secondary,#f1f5f9);color:#185FA5;border:1px solid var(--color-border-secondary,#cbd5e1);font-weight:700;display:flex;align-items:center;gap:4px;" title="Fetch business details from GSTIN">
@@ -4273,10 +4266,7 @@ function showAddCustomer() {
     <div class="form-grid">
       <div class="form-group"><label>Customer Name *</label><input type="text" id="nc-name" placeholder="Business name"></div>
       <div class="form-group">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          <span>GSTIN/UIN *</span>
-          <span id="nc-gstin-status" style="font-size:11px;text-transform:none;font-weight:600;display:none;"></span>
-        </label>
+        <label>GSTIN/UIN * <span id="nc-gstin-status" style="display:none;"></span></label>
         <div style="position:relative;display:flex;align-items:center;">
           <input type="text" id="nc-gstin" placeholder="29AAAAA0000A1Z5" style="text-transform:uppercase;padding-right:75px;" maxlength="15" oninput="handleGstinInput(this.value, 'customer')" onchange="handleGstinInput(this.value, 'customer', true)">
           <button type="button" id="nc-gstin-btn" class="btn btn-sm btn-secondary" onclick="fetchGstinDetails(document.getElementById('nc-gstin').value, 'customer')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:4px 8px;font-size:11px;border-radius:8px;background:var(--color-background-secondary,#f1f5f9);color:#185FA5;border:1px solid var(--color-border-secondary,#cbd5e1);font-weight:700;display:flex;align-items:center;gap:4px;" title="Fetch business details from GSTIN">
