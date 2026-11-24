@@ -1,0 +1,429 @@
+{
+  "company": {
+    "id": 1,
+    "name": "sjhad",
+    "address": "HSR Layout, Bangalore",
+    "gstin": "29AACCT3705E000",
+    "state": "Karnataka",
+    "state_code": "29",
+    "phone": "+91 878 8789 8789",
+    "email": "contact@happyholidays.com",
+    "bank_name": "ICICI Bank",
+    "bank_branch": "Surat",
+    "bank_acc_no": "2715500356",
+    "bank_ifsc": "ICIC0002715",
+    "bank_upi_id": "happyholidays@icici",
+    "terms": "Term 1\nTerm 2",
+    "contact_person": "Mr. Abhirati Jani",
+    "logo_url": "",
+    "logo_size": 85,
+    "gemini_api_key": "",
+    "gstin_api_key": null
+  },
+  "customers": [
+    {
+      "id": 1,
+      "name": "Kiran Enterprises",
+      "gstin": "29AAFFC8126N1ZZ",
+      "address": "12th Cross, Bangalore",
+      "state": "Karnataka",
+      "phone": "9876543210",
+      "email": "kiran@example.com"
+    },
+    {
+      "id": 2,
+      "name": "Raj Constructions",
+      "gstin": "29AABCR1234D1Z1",
+      "address": "MG Road, Bangalore",
+      "state": "Karnataka",
+      "phone": "9876543211",
+      "email": "raj@example.com"
+    },
+    {
+      "id": 3,
+      "name": "Metro Builders",
+      "gstin": "29AABCM5678G1Z2",
+      "address": "Whitefield, Bangalore",
+      "state": "Karnataka",
+      "phone": "9876543212",
+      "email": "metro@example.com"
+    },
+    {
+      "id": 4,
+      "name": "City Corp",
+      "gstin": "29AABCC9012H1Z3",
+      "address": "Bangalore",
+      "state": "Karnataka",
+      "phone": "",
+      "email": ""
+    },
+    {
+      "id": 5,
+      "name": "Xyz",
+      "gstin": "",
+      "address": "",
+      "state": "Karnataka",
+      "phone": null,
+      "email": null
+    },
+    {
+      "id": 6,
+      "name": "sib EERE",
+      "gstin": "",
+      "address": "",
+      "state": "Karnataka",
+      "phone": "",
+      "email": ""
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "12MM**",
+      "hsn": "1005",
+      "unit": "No",
+      "rate": "500.00",
+      "gst_rate": 18
+    },
+    {
+      "id": 2,
+      "name": "6MM TMT Bar",
+      "hsn": "7214",
+      "unit": "Kg",
+      "rate": "65.00",
+      "gst_rate": 18
+    },
+    {
+      "id": 3,
+      "name": "OPC Cement 53 Grade",
+      "hsn": "2523",
+      "unit": "Bag",
+      "rate": "380.00",
+      "gst_rate": 28
+    },
+    {
+      "id": 4,
+      "name": "River Sand",
+      "hsn": "2505",
+      "unit": "Ton",
+      "rate": "1800.00",
+      "gst_rate": 5
+    },
+    {
+      "id": 5,
+      "name": "abc",
+      "hsn": "123`",
+      "unit": "12",
+      "rate": "12.00",
+      "gst_rate": 18
+    }
+  ],
+  "invoices": [
+    {
+      "id": "SHB/464/26",
+      "date": "24-Nov-26",
+      "customer_name": "City Corp",
+      "gstin": "29AABCC9012H1Z3",
+      "taxable": "65.00",
+      "cgst": "5.85",
+      "sgst": "5.85",
+      "igst": "0.00",
+      "total": "76.70",
+      "status": "pending",
+      "notes": "",
+      "po_no": "",
+      "delivery_note": "",
+      "terms_of_payment": "Immediate",
+      "dispatch_through": "",
+      "destination": "",
+      "journey_date": "23-Nov-2026",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Karnataka ( 29 )",
+      "items": [
+        {
+          "name": "6MM TMT Bar",
+          "hsn": "7214",
+          "qty": 1,
+          "unit": "Kg",
+          "rate": 65,
+          "gstRate": 18,
+          "amount": 65
+        }
+      ]
+    },
+    {
+      "id": "SHB/463/26",
+      "date": "24-Nov-26",
+      "customer_name": "City Corp",
+      "gstin": "29AABCC9012H1Z3",
+      "taxable": "65.00",
+      "cgst": "5.85",
+      "sgst": "5.85",
+      "igst": "0.00",
+      "total": "76.70",
+      "status": "pending",
+      "notes": "",
+      "po_no": "",
+      "delivery_note": "",
+      "terms_of_payment": "Immediate",
+      "dispatch_through": "",
+      "destination": "",
+      "journey_date": "17-Nov-2026",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Karnataka ( 29 )",
+      "items": [
+        {
+          "name": "6MM TMT Bar",
+          "hsn": "7214",
+          "qty": 1,
+          "unit": "Kg",
+          "rate": 65,
+          "gstRate": 18,
+          "amount": 65
+        }
+      ]
+    },
+    {
+      "id": "SHB/462/20",
+      "date": "11-Jun-26",
+      "customer_name": "sib EERE",
+      "gstin": "",
+      "taxable": "65.00",
+      "cgst": "5.85",
+      "sgst": "5.85",
+      "igst": "0.00",
+      "total": "76.70",
+      "status": "paid",
+      "notes": "",
+      "po_no": "",
+      "delivery_note": "",
+      "terms_of_payment": "Immediate",
+      "dispatch_through": "",
+      "destination": "",
+      "journey_date": "",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Karnataka ( 29 )",
+      "items": [
+        {
+          "name": "Ts \\ i i i",
+          "hsn": "",
+          "qty": 5,
+          "unit": "No",
+          "rate": 8,
+          "gstRate": 18,
+          "amount": 40
+        },
+        {
+          "name": "i PEE £5 i",
+          "hsn": "",
+          "qty": 5,
+          "unit": "No",
+          "rate": 5,
+          "gstRate": 18,
+          "amount": 25
+        }
+      ]
+    },
+    {
+      "id": "SHB/461/20",
+      "date": "9-Jun-26",
+      "customer_name": "Xyz",
+      "gstin": "",
+      "taxable": "0.00",
+      "cgst": "0.00",
+      "sgst": "0.00",
+      "igst": "0.00",
+      "total": "0.00",
+      "status": "pending",
+      "notes": "",
+      "po_no": "",
+      "delivery_note": "",
+      "terms_of_payment": "Immediate",
+      "dispatch_through": "",
+      "destination": "",
+      "journey_date": "",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Gujarat ( 24 )",
+      "items": [
+        {
+          "name": "\nMcb 2 pole ",
+          "hsn": "694443",
+          "qty": 1,
+          "unit": "No",
+          "rate": 0,
+          "gstRate": 18,
+          "amount": 0
+        }
+      ]
+    },
+    {
+      "id": "SHB/460/20",
+      "date": "9-Jun-26",
+      "customer_name": "Kiran Enterprises",
+      "gstin": "29AAFFC8126N1ZZ",
+      "taxable": "100.00",
+      "cgst": "0.00",
+      "sgst": "0.00",
+      "igst": "18.00",
+      "total": "118.00",
+      "status": "pending",
+      "notes": "",
+      "po_no": "",
+      "delivery_note": "",
+      "terms_of_payment": "Immediate",
+      "dispatch_through": "",
+      "destination": "",
+      "journey_date": "",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Gujarat ( 24 )",
+      "items": [
+        {
+          "name": "da",
+          "hsn": "dsa",
+          "qty": 1,
+          "unit": "No",
+          "rate": 100,
+          "gstRate": 18,
+          "amount": 100
+        }
+      ]
+    },
+    {
+      "id": "SHB/459/20",
+      "date": "26-Dec-20",
+      "customer_name": "City Corp",
+      "gstin": "29AABCC9012H1Z3",
+      "taxable": "22000.00",
+      "cgst": "1980.00",
+      "sgst": "1980.00",
+      "igst": "0.00",
+      "total": "25960.00",
+      "status": "paid",
+      "notes": null,
+      "po_no": null,
+      "delivery_note": null,
+      "terms_of_payment": "Immediate",
+      "dispatch_through": null,
+      "destination": null,
+      "journey_date": "10-Apr-2024",
+      "booking_branch": "Ahmedabad",
+      "place_of_supply": "Gujarat ( 24 )",
+      "items": [
+        {
+          "name": "6MM TMT Bar",
+          "hsn": "7214",
+          "qty": 200,
+          "unit": "Kg",
+          "rate": 65,
+          "gstRate": 18,
+          "amount": 13000
+        },
+        {
+          "name": "OPC Cement 53 Grade",
+          "hsn": "2523",
+          "qty": 23.684,
+          "unit": "Bag",
+          "rate": 380,
+          "gstRate": 18,
+          "amount": 9000
+        }
+      ]
+    },
+    {
+      "id": "SHB/458/20",
+      "date": "24-Dec-20",
+      "customer_name": "Metro Builders",
+      "gstin": "29AABCM5678G1Z2",
+      "taxable": "8500.00",
+      "cgst": "765.00",
+      "sgst": "765.00",
+      "igst": "0.00",
+      "total": "10030.00",
+      "status": "pending",
+      "notes": null,
+      "po_no": null,
+      "delivery_note": null,
+      "terms_of_payment": "Immediate",
+      "dispatch_through": null,
+      "destination": null,
+      "journey_date": null,
+      "booking_branch": null,
+      "place_of_supply": null,
+      "items": [
+        {
+          "name": "12MM**",
+          "hsn": "1005",
+          "qty": 17,
+          "unit": "No",
+          "rate": 500,
+          "gstRate": 18,
+          "amount": 8500
+        }
+      ]
+    },
+    {
+      "id": "SHB/457/20",
+      "date": "22-Dec-20",
+      "customer_name": "Raj Constructions",
+      "gstin": "29AABCR1234D1Z1",
+      "taxable": "12000.00",
+      "cgst": "1080.00",
+      "sgst": "1080.00",
+      "igst": "0.00",
+      "total": "14160.00",
+      "status": "paid",
+      "notes": null,
+      "po_no": null,
+      "delivery_note": null,
+      "terms_of_payment": "Immediate",
+      "dispatch_through": null,
+      "destination": null,
+      "journey_date": null,
+      "booking_branch": null,
+      "place_of_supply": null,
+      "items": [
+        {
+          "name": "6MM TMT Bar",
+          "hsn": "7214",
+          "qty": 200,
+          "unit": "Kg",
+          "rate": 60,
+          "gstRate": 18,
+          "amount": 12000
+        }
+      ]
+    },
+    {
+      "id": "SHB/456/20",
+      "date": "20-Dec-20",
+      "customer_name": "Kiran Enterprises",
+      "gstin": "29AAFFC8126N1ZZ",
+      "taxable": "3500.00",
+      "cgst": "315.00",
+      "sgst": "315.00",
+      "igst": "0.00",
+      "total": "4130.00",
+      "status": "paid",
+      "notes": null,
+      "po_no": null,
+      "delivery_note": null,
+      "terms_of_payment": "Immediate",
+      "dispatch_through": null,
+      "destination": null,
+      "journey_date": null,
+      "booking_branch": null,
+      "place_of_supply": null,
+      "items": [
+        {
+          "name": "12MM**",
+          "hsn": "1005",
+          "qty": 7,
+          "unit": "No",
+          "rate": 500,
+          "gstRate": 18,
+          "amount": 3500
+        }
+      ]
+    }
+  ]
+}

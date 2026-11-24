@@ -1,4 +1,28 @@
-<!DOCTYPE html>
+<div class="card" style="grid-column: 1 / -1;">
+      <div class="section-title"><i class="ti ti-file-text" style="color:#185FA5"></i> Terms and Conditions</div>
+      <div class="form-group">
+        <textarea id="s-terms" style="min-height:90px">${co.terms||''}</textarea>
+      </div>
+    </div>
+    <div class="card" style="grid-column: 1 / -1; margin-top: 8px;">
+      <div class="section-title"><i class="ti ti-database" style="color:#185FA5"></i> Local Storage & Backup Management</div>
+      <p style="font-size:12px;color:var(--color-text-secondary,#666);margin-bottom:14px;line-height:1.5;">
+        All invoices, customers, products, and company settings are saved directly in your browser's private offline storage. No remote database or subscription required. Download regular backups to keep your data safe or transfer between devices.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button type="button" class="btn btn-secondary" onclick="LocalStorageStore.exportBackup()">
+          <i class="ti ti-download"></i> Export Data Backup (.json)
+        </button>
+        <label class="btn btn-secondary" style="cursor:pointer;margin:0;">
+          <i class="ti ti-upload"></i> Restore from Backup (.json)
+          <input type="file" accept=".json" onchange="LocalStorageStore.importBackup(this)" style="display:none;">
+        </label>
+        <button type="button" class="btn btn-danger" onclick="LocalStorageStore.resetToDefaults()">
+          <i class="ti ti-refresh"></i> Reset to Sample Data
+        </button>
+      </div>
+    </div>
+  </div><!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1325,19 +1349,121 @@ const state = {
   customers: [],
   products: [],
   gstRates: [5, 12, 18, 28],
-  company: { name: 'Surabhi Hardwares, Bangalore', address: 'HSR Layout, Bangalore', gstin: '29AACCT3705E000', state: 'Karnataka', stateCode: '29' },
+  company: DEFAULT_DATA.company,
   newInvoice: null,
   editingInvoice: null,
   alert: null,
 };
 
-// ========== API HELPER ==========
-function apiFetch(path, options) {
-  const base = (window.location.protocol === 'capacitor:' || (window.location.hostname === 'localhost' && window.location.port === ''))
-    ? 'https://gst-billing.firwithrj.workers.dev'
-    : '';
-  return fetch(base + path, options);
-}
+
+// ========== DEFAULT EMBEDDED DATASET (OFFLINE FIRST) ==========
+const DEFAULT_DATA = {"company":{"id":1,"name":"sjhad","address":"HSR Layout, Bangalore","gstin":"29AACCT3705E000","state":"Karnataka","state_code":"29","phone":"+91 878 8789 8789","email":"contact@happyholidays.com","bank_name":"ICICI Bank","bank_branch":"Surat","bank_acc_no":"2715500356","bank_ifsc":"ICIC0002715","bank_upi_id":"happyholidays@icici","terms":"Term 1\nTerm 2","contact_person":"Mr. Abhirati Jani","logo_url":"","logo_size":85,"gemini_api_key":"","gstin_api_key":null},"customers":[{"id":1,"name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","address":"12th Cross, Bangalore","state":"Karnataka","phone":"9876543210","email":"kiran@example.com"},{"id":2,"name":"Raj Constructions","gstin":"29AABCR1234D1Z1","address":"MG Road, Bangalore","state":"Karnataka","phone":"9876543211","email":"raj@example.com"},{"id":3,"name":"Metro Builders","gstin":"29AABCM5678G1Z2","address":"Whitefield, Bangalore","state":"Karnataka","phone":"9876543212","email":"metro@example.com"},{"id":4,"name":"City Corp","gstin":"29AABCC9012H1Z3","address":"Bangalore","state":"Karnataka","phone":"","email":""},{"id":5,"name":"Xyz","gstin":"","address":"","state":"Karnataka","phone":null,"email":null},{"id":6,"name":"sib EERE","gstin":"","address":"","state":"Karnataka","phone":"","email":""}],"products":[{"id":1,"name":"12MM**","hsn":"1005","unit":"No","rate":"500.00","gst_rate":18},{"id":2,"name":"6MM TMT Bar","hsn":"7214","unit":"Kg","rate":"65.00","gst_rate":18},{"id":3,"name":"OPC Cement 53 Grade","hsn":"2523","unit":"Bag","rate":"380.00","gst_rate":28},{"id":4,"name":"River Sand","hsn":"2505","unit":"Ton","rate":"1800.00","gst_rate":5},{"id":5,"name":"abc","hsn":"123`","unit":"12","rate":"12.00","gst_rate":18}],"invoices":[{"id":"SHB/464/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"23-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/463/26","date":"24-Nov-26","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"17-Nov-2026","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":1,"unit":"Kg","rate":65,"gstRate":18,"amount":65}]},{"id":"SHB/462/20","date":"11-Jun-26","customer_name":"sib EERE","gstin":"","taxable":"65.00","cgst":"5.85","sgst":"5.85","igst":"0.00","total":"76.70","status":"paid","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Karnataka ( 29 )","items":[{"name":"Ts \\ i i i","hsn":"","qty":5,"unit":"No","rate":8,"gstRate":18,"amount":40},{"name":"i PEE £5 i","hsn":"","qty":5,"unit":"No","rate":5,"gstRate":18,"amount":25}]},{"id":"SHB/461/20","date":"9-Jun-26","customer_name":"Xyz","gstin":"","taxable":"0.00","cgst":"0.00","sgst":"0.00","igst":"0.00","total":"0.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"\nMcb 2 pole ","hsn":"694443","qty":1,"unit":"No","rate":0,"gstRate":18,"amount":0}]},{"id":"SHB/460/20","date":"9-Jun-26","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"100.00","cgst":"0.00","sgst":"0.00","igst":"18.00","total":"118.00","status":"pending","notes":"","po_no":"","delivery_note":"","terms_of_payment":"Immediate","dispatch_through":"","destination":"","journey_date":"","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"da","hsn":"dsa","qty":1,"unit":"No","rate":100,"gstRate":18,"amount":100}]},{"id":"SHB/459/20","date":"26-Dec-20","customer_name":"City Corp","gstin":"29AABCC9012H1Z3","taxable":"22000.00","cgst":"1980.00","sgst":"1980.00","igst":"0.00","total":"25960.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":"10-Apr-2024","booking_branch":"Ahmedabad","place_of_supply":"Gujarat ( 24 )","items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":65,"gstRate":18,"amount":13000},{"name":"OPC Cement 53 Grade","hsn":"2523","qty":23.684,"unit":"Bag","rate":380,"gstRate":18,"amount":9000}]},{"id":"SHB/458/20","date":"24-Dec-20","customer_name":"Metro Builders","gstin":"29AABCM5678G1Z2","taxable":"8500.00","cgst":"765.00","sgst":"765.00","igst":"0.00","total":"10030.00","status":"pending","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":17,"unit":"No","rate":500,"gstRate":18,"amount":8500}]},{"id":"SHB/457/20","date":"22-Dec-20","customer_name":"Raj Constructions","gstin":"29AABCR1234D1Z1","taxable":"12000.00","cgst":"1080.00","sgst":"1080.00","igst":"0.00","total":"14160.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"6MM TMT Bar","hsn":"7214","qty":200,"unit":"Kg","rate":60,"gstRate":18,"amount":12000}]},{"id":"SHB/456/20","date":"20-Dec-20","customer_name":"Kiran Enterprises","gstin":"29AAFFC8126N1ZZ","taxable":"3500.00","cgst":"315.00","sgst":"315.00","igst":"0.00","total":"4130.00","status":"paid","notes":null,"po_no":null,"delivery_note":null,"terms_of_payment":"Immediate","dispatch_through":null,"destination":null,"journey_date":null,"booking_branch":null,"place_of_supply":null,"items":[{"name":"12MM**","hsn":"1005","qty":7,"unit":"No","rate":500,"gstRate":18,"amount":3500}]}]};
+
+// ========== LOCAL STORAGE STORE (NO EXTERNAL DATABASE REQUIRED) ==========
+const LocalStorageStore = {
+  KEYS: {
+    INVOICES: 'gst_billing_invoices',
+    CUSTOMERS: 'gst_billing_customers',
+    PRODUCTS: 'gst_billing_products',
+    COMPANY: 'gst_billing_company'
+  },
+  init() {
+    if (!localStorage.getItem(this.KEYS.INVOICES)) {
+      localStorage.setItem(this.KEYS.INVOICES, JSON.stringify(DEFAULT_DATA.invoices));
+    }
+    if (!localStorage.getItem(this.KEYS.CUSTOMERS)) {
+      localStorage.setItem(this.KEYS.CUSTOMERS, JSON.stringify(DEFAULT_DATA.customers));
+    }
+    if (!localStorage.getItem(this.KEYS.PRODUCTS)) {
+      localStorage.setItem(this.KEYS.PRODUCTS, JSON.stringify(DEFAULT_DATA.products));
+    }
+    if (!localStorage.getItem(this.KEYS.COMPANY)) {
+      localStorage.setItem(this.KEYS.COMPANY, JSON.stringify(DEFAULT_DATA.company));
+    }
+  },
+  getInvoices() {
+    try { return JSON.parse(localStorage.getItem(this.KEYS.INVOICES)) || []; } catch(e) { return []; }
+  },
+  saveInvoices(invoices) {
+    localStorage.setItem(this.KEYS.INVOICES, JSON.stringify(invoices));
+  },
+  getCustomers() {
+    try { return JSON.parse(localStorage.getItem(this.KEYS.CUSTOMERS)) || []; } catch(e) { return []; }
+  },
+  saveCustomers(customers) {
+    localStorage.setItem(this.KEYS.CUSTOMERS, JSON.stringify(customers));
+  },
+  getProducts() {
+    try { return JSON.parse(localStorage.getItem(this.KEYS.PRODUCTS)) || []; } catch(e) { return []; }
+  },
+  saveProducts(products) {
+    localStorage.setItem(this.KEYS.PRODUCTS, JSON.stringify(products));
+  },
+  getCompany() {
+    try { return JSON.parse(localStorage.getItem(this.KEYS.COMPANY)) || DEFAULT_DATA.company; } catch(e) { return DEFAULT_DATA.company; }
+  },
+  saveCompany(company) {
+    localStorage.setItem(this.KEYS.COMPANY, JSON.stringify(company));
+  },
+  exportBackup() {
+    const backup = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      company: this.getCompany(),
+      customers: this.getCustomers(),
+      products: this.getProducts(),
+      invoices: this.getInvoices()
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'GST_Billing_Backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  importBackup(fileInput) {
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.company) {
+          this.saveCompany(data.company);
+          state.company = data.company;
+        }
+        if (Array.isArray(data.customers)) {
+          this.saveCustomers(data.customers);
+          state.customers = data.customers;
+        }
+        if (Array.isArray(data.products)) {
+          this.saveProducts(data.products);
+          state.products = data.products;
+        }
+        if (Array.isArray(data.invoices)) {
+          this.saveInvoices(data.invoices);
+          state.invoices = data.invoices;
+        }
+        showAlert('Backup imported successfully! All records restored.', 'success');
+        render();
+      } catch (err) {
+        alert('Invalid backup JSON file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  },
+  resetToDefaults() {
+    if (!confirm('Are you sure you want to reset all data back to the default sample dataset? Any unsaved edits will be lost.')) return;
+    localStorage.setItem(this.KEYS.INVOICES, JSON.stringify(DEFAULT_DATA.invoices));
+    localStorage.setItem(this.KEYS.CUSTOMERS, JSON.stringify(DEFAULT_DATA.customers));
+    localStorage.setItem(this.KEYS.PRODUCTS, JSON.stringify(DEFAULT_DATA.products));
+    localStorage.setItem(this.KEYS.COMPANY, JSON.stringify(DEFAULT_DATA.company));
+    initApp();
+    showAlert('Reset back to sample defaults!', 'success');
+  }
+};
+
 
 // ========== INITIALIZATION ==========
 function hideSplashScreen() {
@@ -1350,95 +1476,45 @@ function hideSplashScreen() {
   }
 }
 
-async function initApp() {
-  // 1. Instant Cache Hydration (SWR - Instant 0ms Startup)
-  let hasCache = false;
-  try {
-    const cInv = localStorage.getItem('cache_invoices');
-    const cCust = localStorage.getItem('cache_customers');
-    const cProd = localStorage.getItem('cache_products');
-    const cComp = localStorage.getItem('cache_company');
-    if (cInv && cCust && cProd) {
-      state.invoices = JSON.parse(cInv) || [];
-      state.customers = JSON.parse(cCust) || [];
-      state.products = JSON.parse(cProd) || [];
-      if (cComp) state.company = JSON.parse(cComp) || state.company;
-      hasCache = true;
-      render();
-      hideSplashScreen();
-    }
-  } catch (e) {
-    console.warn('Cache parse error:', e);
+function initApp() {
+  LocalStorageStore.init();
+  state.invoices = LocalStorageStore.getInvoices();
+  state.customers = LocalStorageStore.getCustomers();
+  state.products = LocalStorageStore.getProducts();
+  state.company = LocalStorageStore.getCompany();
+
+  const nameOnly = (state.company?.name || 'Company').split(',')[0];
+  localStorage.setItem('cached_company_name', nameOnly);
+  if (state.company?.logo_url) {
+    localStorage.setItem('cached_logo', state.company.logo_url);
   }
 
-  // 2. Fetch fresh data in background (or foreground if no cache)
-  try {
-    const [invoicesRes, customersRes, productsRes, companyRes] = await Promise.all([
-      apiFetch('/api/invoices').then(res => res.json()),
-      apiFetch('/api/customers').then(res => res.json()),
-      apiFetch('/api/products').then(res => res.json()),
-      apiFetch('/api/company').then(res => res.json())
-    ]);
+  const logoSrc = state.company?.logo_url || '/logo.png';
+  const sidebarLogo = document.getElementById('sidebar-logo-img');
+  if (sidebarLogo) sidebarLogo.src = logoSrc;
+  const mobileLogo = document.getElementById('mobile-logo-img');
+  if (mobileLogo) mobileLogo.src = logoSrc;
 
-    state.invoices = invoicesRes;
-    state.customers = customersRes;
-    state.products = productsRes;
-    if (companyRes) {
-      state.company = companyRes;
-      const nameOnly = companyRes.name.split(',')[0];
-      localStorage.setItem('cached_company_name', nameOnly);
-      if (companyRes.logo_url || companyRes.logoUrl) {
-        localStorage.setItem('cached_logo', companyRes.logo_url || companyRes.logoUrl);
-      }
-    }
-    
-    // Save to local cache
-    try {
-      localStorage.setItem('cache_invoices', JSON.stringify(state.invoices));
-      localStorage.setItem('cache_customers', JSON.stringify(state.customers));
-      localStorage.setItem('cache_products', JSON.stringify(state.products));
-      localStorage.setItem('cache_company', JSON.stringify(state.company));
-    } catch (e) {}
+  const sideComp = document.getElementById('sidebar-company-name');
+  if (sideComp) sideComp.textContent = nameOnly;
+  if (document.getElementById('mobile-welcome-name')) {
+    document.getElementById('mobile-welcome-name').textContent = state.company?.contact_person || 'Kathryn Murphy';
+  }
 
-    // Update sidebar logo/subtext
-    const logoSrc = state.company.logo_url || state.company.logoUrl || '/logo.png';
-    const sidebarLogo = document.getElementById('sidebar-logo-img');
-    if (sidebarLogo) sidebarLogo.src = logoSrc;
-    const mobileLogo = document.getElementById('mobile-logo-img');
-    if (mobileLogo) mobileLogo.src = logoSrc;
-
-    const sideComp = document.getElementById('sidebar-company-name');
-    if (sideComp) sideComp.textContent = state.company.name.split(',')[0];
-    if (document.getElementById('mobile-welcome-name')) {
-      document.getElementById('mobile-welcome-name').textContent = state.company.contact_person || state.company.contactPerson || 'Kathryn Murphy';
-    }
-
-    // Handle shared invoice view routing on startup
-    const params = new URLSearchParams(window.location.search);
-    const pageParam = params.get('page');
-    const idParam = params.get('id');
-    if (pageParam === 'view' && idParam) {
-      const found = state.invoices.find(x => x.id === idParam);
-      if (found) {
-        state.currentPage = 'view';
-        state.viewingInvoice = found;
-      }
-    }
-
-    // Smoothly re-render if user hasn't started filling a new invoice
-    if (state.currentPage !== 'invoice' || !state.newInvoice || state.newInvoice.items.length === 0) {
-      render();
-    }
-    if (!hasCache) {
-      hideSplashScreen();
-    }
-  } catch (err) {
-    console.error("Failed to load application data:", err);
-    if (!hasCache) {
-      showAlert("Database connection failed. Please check backend log.", "danger");
-      hideSplashScreen();
+  // Handle shared invoice view routing on startup
+  const params = new URLSearchParams(window.location.search);
+  const pageParam = params.get('page');
+  const idParam = params.get('id');
+  if (pageParam === 'view' && idParam) {
+    const found = state.invoices.find(x => x.id === idParam);
+    if (found) {
+      state.currentPage = 'view';
+      state.viewingInvoice = found;
     }
   }
+
+  render();
+  hideSplashScreen();
 }
 
 // ========== UTILS ==========
@@ -1665,20 +1741,7 @@ async function submitEditInvoiceDate() {
   }
 
   try {
-    const res = await apiFetch(`/api/invoices/${encodeURIComponent(currentEditingInvoiceId)}/date`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: newDate,
-        journeyDate: newJd
-      })
-    });
-
-    if (!res.ok) {
-      throw new Error(await res.text());
-    }
-
-    // Update state
+    // Update state and persist to local storage
     const invIdx = state.invoices.findIndex(x => x.id === currentEditingInvoiceId);
     if (invIdx !== -1) {
       state.invoices[invIdx].date = newDate;
@@ -1692,6 +1755,7 @@ async function submitEditInvoiceDate() {
       state.viewingInvoice.journeyDate = newJd;
     }
 
+    LocalStorageStore.saveInvoices(state.invoices);
     closeEditDateModal();
     showAlert(`Invoice ${currentEditingInvoiceId} date updated to ${newDate}!`, 'success');
     render();
@@ -1910,12 +1974,71 @@ async function fetchGstinDetails(gstin, context) {
   }
 
   try {
-    const res = await apiFetch(`/api/gstin-lookup/${encodeURIComponent(cleanGstin)}`);
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
+    // 1. Look up in local customer database
+    const localCust = state.customers.find(c => c.gstin && c.gstin.trim().toUpperCase() === cleanGstin);
+    if (localCust) {
+      applyGstinData({
+        name: localCust.name,
+        gstin: localCust.gstin,
+        address: localCust.address,
+        state: localCust.state,
+        phone: localCust.phone,
+        source: 'customer_db'
+      }, context, 'Saved Customer');
+      return;
+    }
 
-    if (data.name) {
-      applyGstinData(data, context, data.source === 'customer_db' ? 'Customer DB' : (data.source === 'invoice_history' ? 'Invoice History' : (data.source === 'gstin_provider' ? 'GST Provider' : 'Registry Lookup')));
+    // 2. Look up in local invoice history
+    const pastInv = state.invoices.find(i => i.gstin && i.gstin.trim().toUpperCase() === cleanGstin);
+    if (pastInv) {
+      applyGstinData({
+        name: pastInv.customer_name || pastInv.customer,
+        gstin: pastInv.gstin,
+        address: pastInv.customerAddress || pastInv.address || '',
+        state: pastInv.customerState || pastInv.state || '',
+        phone: pastInv.customerPhone || pastInv.phone || '',
+        source: 'invoice_history'
+      }, context, 'Invoice History');
+      return;
+    }
+
+    // 3. Online GSP lookup if API key configured
+    const gspKey = state.company?.gstin_api_key;
+    if (gspKey) {
+      try {
+        const gspRes = await fetch(`https://sheet.gstincheck.co.in/check/${encodeURIComponent(gspKey)}/${encodeURIComponent(cleanGstin)}`);
+        if (gspRes.ok) {
+          const gspData = await gspRes.json();
+          if (gspData.flag && gspData.data) {
+            const d = gspData.data;
+            const tradeName = d.tradeNam || d.lgnm || '';
+            const addr = d.pradr?.addr ? `${d.pradr.addr.bno||''} ${d.pradr.addr.st||''}, ${d.pradr.addr.loc||''}, ${d.pradr.addr.pncd||''}`.trim() : '';
+            applyGstinData({
+              name: tradeName,
+              gstin: cleanGstin,
+              address: addr,
+              state: d.pradr?.addr?.stcd || '',
+              source: 'gstin_provider'
+            }, context, 'GST Portal Live');
+            return;
+          }
+        }
+      } catch (gspErr) {
+        console.warn('GSP live lookup error:', gspErr);
+      }
+    }
+
+    // 4. Offline decode from GSTIN format
+    const info = getGstinInfo(cleanGstin);
+    const data = {
+      state: info?.state || 'Karnataka',
+      stateCode: info?.stateCode || cleanGstin.slice(0, 2),
+      placeOfSupply: info?.pos || '',
+      entityType: info?.type || 'Business'
+    };
+
+    if (false) {
+      // placeholder
     } else {
       // Auto-set state and POS
       if (context === 'invoice') {
@@ -2693,21 +2816,48 @@ async function startOcrProcessing() {
 }
 
 async function runGeminiOcr(dataUrl, mimeType) {
-  const response = await apiFetch('/api/ai/ocr', {
+  const apiKey = state.company?.gemini_api_key || localStorage.getItem('gemini_api_key') || '';
+  if (!apiKey) {
+    throw new Error('Gemini API key is not configured. Please add your free key in Settings, or use Local OCR.');
+  }
+  const base64Data = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+  const mime = mimeType || (dataUrl.includes('image/png') ? 'image/png' : 'image/jpeg');
+
+  const promptText = `Extract structured GST invoice/bill information from this image into pure JSON with keys:
+{
+  "customerName": "...",
+  "gstin": "...",
+  "date": "DD-Mon-YY",
+  "invoiceNo": "...",
+  "placeOfSupply": "...",
+  "items": [
+    { "name": "...", "hsn": "...", "qty": 1, "unit": "No", "rate": 0, "gstRate": 18, "amount": 0 }
+  ]
+}
+Return only JSON without markdown fences.`;
+
+  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      image: dataUrl,
-      mimeType: mimeType || 'image/jpeg'
+      contents: [{
+        parts: [
+          { text: promptText },
+          { inline_data: { mime_type: mime, data: base64Data } }
+        ]
+      }],
+      generationConfig: { response_mime_type: 'application/json' }
     })
   });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`AI OCR Error (${response.status}): ${errorText}`);
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Google Gemini API error (${resp.status}): ${errText}`);
   }
-  
-  return await response.json();
+
+  const jsonResp = await resp.json();
+  const textContent = jsonResp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  return JSON.parse(textContent);
 }
 
 function runLocalTesseractOcr(dataUrl, lang = 'eng') {
@@ -3063,7 +3213,7 @@ function applyOcrDataToInvoice() {
 
 let isSavingInvoice = false;
 
-async function saveInvoice() {
+function saveInvoice() {
   if (isSavingInvoice) return;
   if (!state.newInvoice) {
     showAlert('No active invoice to save.', 'danger');
@@ -3079,20 +3229,12 @@ async function saveInvoice() {
   
   isSavingInvoice = true;
 
-  // Visual loading feedback immediately on the clicked button
-  const saveBtn = document.getElementById('btn-save-inv') || document.getElementById('btn-save-preview-inv');
-  const originalBtnHTML = saveBtn ? saveBtn.innerHTML : '';
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="ti ti-loader spin"></i> Saving & Generating...';
-  }
-
   const custGstin = document.getElementById('inv-gstin')?.value?.trim() || inv.customer?.gstin || '';
   const custAddr = document.getElementById('inv-addr')?.value?.trim() || inv.customer?.address || '';
   const custState = document.getElementById('inv-state')?.value?.trim() || inv.customer?.state || 'Karnataka';
   const custPhone = document.getElementById('inv-phone')?.value?.trim() || inv.customer?.phone || '';
 
-  // Instantly update local customer cache for 0ms lag
+  // Instantly update local customer cache
   const existingCust = state.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
   if (existingCust) {
     if (custGstin) existingCust.gstin = custGstin;
@@ -3101,6 +3243,7 @@ async function saveInvoice() {
     if (custPhone) existingCust.phone = custPhone;
   } else {
     state.customers.push({
+      id: Date.now(),
       name: custName,
       gstin: custGstin,
       address: custAddr,
@@ -3109,72 +3252,55 @@ async function saveInvoice() {
       email: ''
     });
   }
-  try { localStorage.setItem('cache_customers', JSON.stringify(state.customers)); } catch (e) {}
+  LocalStorageStore.saveCustomers(state.customers);
 
   const calc = calcInvoice(inv.items);
   const invoiceData = {
     id: inv.invNo,
     date: document.getElementById('inv-date')?.value?.trim() || inv.date || today(),
-    customerName: custName,
+    customer_name: custName,
+    customer: custName,
     customerAddress: custAddr,
     customerState: custState,
     customerPhone: custPhone,
     gstin: custGstin,
-    taxable: calc.taxable,
-    cgst: calc.cgst,
-    sgst: calc.sgst,
-    igst: calc.igst || 0.00,
-    total: calc.total,
+    taxable: calc.taxable.toFixed(2),
+    cgst: calc.cgst.toFixed(2),
+    sgst: calc.sgst.toFixed(2),
+    igst: (calc.igst || 0).toFixed(2),
+    total: calc.total.toFixed(2),
     status: 'pending',
     notes: document.getElementById('inv-notes')?.value || inv.notes || '',
-    poNo: document.getElementById('inv-po')?.value || inv.poNo || '',
-    deliveryNote: document.getElementById('inv-dn')?.value || inv.deliveryNote || '',
-    termsOfPayment: document.getElementById('inv-top')?.value || inv.termsOfPayment || 'Immediate',
-    dispatchThrough: document.getElementById('inv-disp')?.value || inv.dispatchThrough || '',
+    po_no: document.getElementById('inv-po')?.value || inv.poNo || '',
+    delivery_note: document.getElementById('inv-dn')?.value || inv.deliveryNote || '',
+    terms_of_payment: document.getElementById('inv-top')?.value || inv.termsOfPayment || 'Immediate',
+    dispatch_through: document.getElementById('inv-disp')?.value || inv.dispatchThrough || '',
     destination: inv.destination || '',
-    journeyDate: document.getElementById('inv-jd')?.value?.trim() || inv.journeyDate || '',
-    bookingBranch: document.getElementById('inv-bb')?.value || inv.bookingBranch || '',
-    placeOfSupply: document.getElementById('inv-pos')?.value || inv.placeOfSupply || '',
+    journey_date: document.getElementById('inv-jd')?.value?.trim() || inv.journeyDate || '',
+    booking_branch: document.getElementById('inv-bb')?.value || inv.bookingBranch || '',
+    place_of_supply: document.getElementById('inv-pos')?.value || inv.placeOfSupply || '',
     items: inv.items.map(it => ({
       name: it.name + (it.description ? '\n' + it.description : ''),
-      hsn: it.hsn,
-      qty: it.qty,
-      unit: it.unit,
-      rate: it.rate,
-      gstRate: it.gstRate,
-      amount: it.amount
+      hsn: it.hsn || '',
+      qty: Number(it.qty) || 1,
+      unit: it.unit || 'No',
+      rate: Number(it.rate) || 0,
+      gstRate: Number(it.gstRate) || 18,
+      amount: Number(it.amount) || 0
     }))
   };
 
-  try {
-    // Single consolidated network call - customer and invoice saved together in backend transaction
-    const res = await apiFetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(invoiceData)
-    });
-    
-    if (!res.ok) throw new Error(await res.text());
-    const saved = await res.json();
-    state.invoices.unshift(saved);
-    try { localStorage.setItem('cache_invoices', JSON.stringify(state.invoices)); } catch (e) {}
-    
-    // Reset page states and navigate to history
-    state.newInvoice = {
-      invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
-    };
-    navigate('history');
-    showAlert(`Invoice ${invoiceData.id} created and saved successfully!`);
-  } catch (err) {
-    console.error(err);
-    alert('Error saving invoice: ' + err.message);
-  } finally {
-    isSavingInvoice = false;
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = originalBtnHTML;
-    }
-  }
+  state.invoices.unshift(invoiceData);
+  LocalStorageStore.saveInvoices(state.invoices);
+
+  // Reset active invoice
+  state.newInvoice = {
+    invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
+  };
+  isSavingInvoice = false;
+  navigate('history');
+  showAlert(`Invoice ${invoiceData.id} created and saved successfully!`);
+}
 }
 
 function previewInvoice() {
@@ -3861,24 +3987,13 @@ function printFilteredInvoices() {
   }, 1000);
 }
 
-async function toggleStatus(id) {
+function toggleStatus(id) {
   const inv = state.invoices.find(x => x.id === id);
   if (!inv) return;
-  const newStatus = inv.status === 'paid' ? 'pending' : 'paid';
-  try {
-    const res = await apiFetch(`/api/invoices/${encodeURIComponent(id)}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    });
-    if (!res.ok) throw new Error(await res.text());
-    inv.status = newStatus;
-    try { localStorage.setItem('cache_invoices', JSON.stringify(state.invoices)); } catch (e) {}
-    showAlert(`Invoice ${id} updated to ${newStatus}!`);
-    render();
-  } catch (err) {
-    alert('Error updating status: ' + err.message);
-  }
+  inv.status = inv.status === 'paid' ? 'pending' : 'paid';
+  LocalStorageStore.saveInvoices(state.invoices);
+  showAlert(`Invoice ${id} updated to ${inv.status}!`);
+  render();
 }
 
 function exportFilteredInvoices() {
@@ -4026,34 +4141,29 @@ function showAddCustomer() {
   </div>`;
 }
 
-async function addCustomer() {
-  const name = document.getElementById('nc-name').value;
+function addCustomer() {
+  const name = document.getElementById('nc-name')?.value?.trim();
   if (!name) return alert('Name required');
   
   const customerData = {
+    id: Date.now(),
     name,
-    gstin: document.getElementById('nc-gstin').value,
-    address: document.getElementById('nc-addr').value,
-    state: document.getElementById('nc-state').value,
-    phone: document.getElementById('nc-phone').value,
-    email: document.getElementById('nc-email').value
+    gstin: document.getElementById('nc-gstin')?.value?.trim() || '',
+    address: document.getElementById('nc-addr')?.value?.trim() || '',
+    state: document.getElementById('nc-state')?.value?.trim() || 'Karnataka',
+    phone: document.getElementById('nc-phone')?.value?.trim() || '',
+    email: document.getElementById('nc-email')?.value?.trim() || ''
   };
 
-  try {
-    const res = await apiFetch('/api/customers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customerData)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const saved = await res.json();
-    state.customers.push(saved);
-    try { localStorage.setItem('cache_customers', JSON.stringify(state.customers)); } catch (e) {}
-    showAlert(`Customer "${name}" added!`);
-    navigate('customers');
-  } catch (err) {
-    alert('Error adding customer: ' + err.message);
+  const existingIdx = state.customers.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+  if (existingIdx !== -1) {
+    state.customers[existingIdx] = customerData;
+  } else {
+    state.customers.push(customerData);
   }
+  LocalStorageStore.saveCustomers(state.customers);
+  showAlert(`Customer "${name}" saved!`);
+  navigate('customers');
 }
 
 // ========== PRODUCTS ==========
@@ -4124,33 +4234,28 @@ function showAddProduct() {
   </div>`;
 }
 
-async function addProduct() {
-  const name = document.getElementById('np-name').value;
+function addProduct() {
+  const name = document.getElementById('np-name')?.value?.trim();
   if (!name) return alert('Name required');
 
   const productData = {
+    id: Date.now(),
     name,
-    hsn: document.getElementById('np-hsn').value,
-    unit: document.getElementById('np-unit').value,
-    rate: parseFloat(document.getElementById('np-rate').value)||0,
-    gstRate: parseInt(document.getElementById('np-gst').value)
+    hsn: document.getElementById('np-hsn')?.value?.trim() || '',
+    unit: document.getElementById('np-unit')?.value?.trim() || 'No',
+    rate: parseFloat(document.getElementById('np-rate')?.value) || 0,
+    gst_rate: parseInt(document.getElementById('np-gst')?.value) || 18
   };
 
-  try {
-    const res = await apiFetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const saved = await res.json();
-    state.products.push(saved);
-    try { localStorage.setItem('cache_products', JSON.stringify(state.products)); } catch (e) {}
-    showAlert(`Product "${name}" added!`);
-    navigate('products');
-  } catch (err) {
-    alert('Error adding product: ' + err.message);
+  const existingIdx = state.products.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+  if (existingIdx !== -1) {
+    state.products[existingIdx] = productData;
+  } else {
+    state.products.push(productData);
   }
+  LocalStorageStore.saveProducts(state.products);
+  showAlert(`Product "${name}" saved!`);
+  navigate('products');
 }
 
 // ========== GST RATES ==========
@@ -4242,7 +4347,7 @@ function renderReports() {
 
   return `
   <div class="page-header">
-    <div><div class="page-title">Reports</div><div class="page-subtitle">Real-time analytical data generated from Neon DB</div></div>
+    <div><div class="page-title">Reports</div><div class="page-subtitle">Real-time analytics computed directly in your browser</div></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-sm btn-secondary" onclick="window.print()"><i class="ti ti-download"></i> Export PDF</button>
     </div>
@@ -4342,7 +4447,7 @@ function renderSettings() {
   const alertStr = state.alert ? `<div class="alert alert-${state.alert.type}"><i class="ti ti-check"></i> ${state.alert.msg}</div>` : '';
   return `
   ${alertStr}
-  <div class="page-header"><div><div class="page-title">Settings</div><div class="page-subtitle">Company profile stored on Neon DB</div></div>
+  <div class="page-header"><div><div class="page-title">Settings</div><div class="page-subtitle">Offline Local Storage · Instant, Private & Secure</div></div>
   <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-device-floppy"></i> Save Settings</button>
   </div>
   <div class="form-grid">
@@ -4425,7 +4530,7 @@ function renderSettings() {
   </div>`;
 }
 
-async function saveSettings() {
+function saveSettings() {
   const name = document.getElementById('s-name')?.value || '';
   const gstin = document.getElementById('s-gstin')?.value || '';
   const address = document.getElementById('s-addr')?.value || '';
@@ -4440,88 +4545,71 @@ async function saveSettings() {
   const bankUpiId = document.getElementById('s-bank-upi-id')?.value || '';
   const terms = document.getElementById('s-terms')?.value || '';
   const contactPerson = document.getElementById('s-contact-person')?.value || '';
-  const logoUrl = document.getElementById('s-logo-url')?.value || '';
-  const logoSize = document.getElementById('s-logo-size')?.value || '70';
-  const geminiApiKey = document.getElementById('s-gemini-api-key')?.value || '';
-  const gstinApiKey = document.getElementById('s-gstin-api-key')?.value || '';
-  
-  if (!name || !gstin) return alert('Name and GSTIN are required.');
+  const logoUrl = document.getElementById('s-logo-url')?.value || state.company.logo_url || '';
+  const logoSize = parseInt(document.getElementById('s-logo-size')?.value) || 85;
+  const geminiApiKey = document.getElementById('s-gemini-api-key')?.value?.trim() || '';
+  const gstinApiKey = document.getElementById('s-gstin-api-key')?.value?.trim() || '';
 
   const companyData = {
     name,
     gstin,
     address,
     state: stateVal,
-    stateCode,
+    state_code: stateCode,
     phone,
     email,
-    bankName,
-    bankBranch,
-    bankAccNo,
-    bankIfsc,
-    bankUpiId,
+    bank_name: bankName,
+    bank_branch: bankBranch,
+    bank_acc_no: bankAccNo,
+    bank_ifsc: bankIfsc,
+    bank_upi_id: bankUpiId,
     terms,
-    contactPerson,
-    logoUrl,
-    logoSize,
-    geminiApiKey,
-    gstinApiKey
+    contact_person: contactPerson,
+    logo_url: logoUrl,
+    logo_size: logoSize,
+    gemini_api_key: geminiApiKey,
+    gstin_api_key: gstinApiKey
   };
 
-  try {
-    const res = await apiFetch('/api/company', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(companyData)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    state.company = await res.json();
-    try { localStorage.setItem('cache_company', JSON.stringify(state.company)); } catch (e) {}
-    const nameOnly = state.company.name.split(',')[0];
-    localStorage.setItem('cached_company_name', nameOnly);
-    if (state.company.logo_url || state.company.logoUrl) {
-      localStorage.setItem('cached_logo', state.company.logo_url || state.company.logoUrl);
-    }
-    document.getElementById('sidebar-company-name').textContent = nameOnly;
-    
-    // Also update logo elements in UI
-    const logoSrc = state.company.logo_url || state.company.logoUrl || '/logo.png';
-    const sidebarLogo = document.getElementById('sidebar-logo-img');
-    if (sidebarLogo) sidebarLogo.src = logoSrc;
-    const mobileLogo = document.getElementById('mobile-logo-img');
-    if (mobileLogo) mobileLogo.src = logoSrc;
-
-    showAlert('Settings saved successfully!');
-    render();
-  } catch (err) {
-    alert('Error saving company profile: ' + err.message);
+  state.company = companyData;
+  LocalStorageStore.saveCompany(state.company);
+  const nameOnly = state.company.name.split(',')[0];
+  localStorage.setItem('cached_company_name', nameOnly);
+  if (logoUrl) {
+    localStorage.setItem('cached_logo', logoUrl);
   }
+  document.getElementById('sidebar-company-name').textContent = nameOnly;
+  
+  const sidebarLogo = document.getElementById('sidebar-logo-img');
+  if (sidebarLogo) sidebarLogo.src = logoUrl || '/logo.png';
+  const mobileLogo = document.getElementById('mobile-logo-img');
+  if (mobileLogo) mobileLogo.src = logoUrl || '/logo.png';
+
+  showAlert('Settings saved locally!', 'success');
+  render();
 }
 
-async function uploadLogoFile(input) {
+function uploadLogoFile(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  
+  if (!file.type.startsWith('image/')) {
+    return alert('Please select a valid image file (PNG, JPG, SVG, WebP).');
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return alert('File size must be under 2MB.');
+  }
+
   const reader = new FileReader();
-  reader.onload = async function(e) {
+  reader.onload = function(e) {
     const base64Data = e.target.result;
-    document.getElementById('s-logo-preview').src = base64Data;
-    
-    try {
-      const res = await apiFetch('/api/upload-logo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data })
-      });
-      
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      document.getElementById('s-logo-url').value = data.url;
-      showAlert('Logo uploaded successfully! Click "Save Settings" to save.', 'success');
-    } catch (err) {
-      alert('Error uploading logo: ' + err.message);
-      document.getElementById('s-logo-preview').src = state.company.logo_url || state.company.logoUrl || '/logo.png';
-    }
+    state.company.logo_url = base64Data;
+    LocalStorageStore.saveCompany(state.company);
+    localStorage.setItem('cached_logo', base64Data);
+    const preview = document.getElementById('s-logo-preview');
+    if (preview) preview.src = base64Data;
+    const urlInput = document.getElementById('s-logo-url');
+    if (urlInput) urlInput.value = base64Data;
+    showAlert('Logo uploaded and saved locally!', 'success');
   };
   reader.readAsDataURL(file);
 }
