@@ -936,6 +936,14 @@
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .spin {
+    animation: spin 0.8s linear infinite !important;
+    display: inline-block;
+  }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 </head>
@@ -1343,6 +1351,27 @@ function hideSplashScreen() {
 }
 
 async function initApp() {
+  // 1. Instant Cache Hydration (SWR - Instant 0ms Startup)
+  let hasCache = false;
+  try {
+    const cInv = localStorage.getItem('cache_invoices');
+    const cCust = localStorage.getItem('cache_customers');
+    const cProd = localStorage.getItem('cache_products');
+    const cComp = localStorage.getItem('cache_company');
+    if (cInv && cCust && cProd) {
+      state.invoices = JSON.parse(cInv) || [];
+      state.customers = JSON.parse(cCust) || [];
+      state.products = JSON.parse(cProd) || [];
+      if (cComp) state.company = JSON.parse(cComp) || state.company;
+      hasCache = true;
+      render();
+      hideSplashScreen();
+    }
+  } catch (e) {
+    console.warn('Cache parse error:', e);
+  }
+
+  // 2. Fetch fresh data in background (or foreground if no cache)
   try {
     const [invoicesRes, customersRes, productsRes, companyRes] = await Promise.all([
       apiFetch('/api/invoices').then(res => res.json()),
@@ -1363,6 +1392,14 @@ async function initApp() {
       }
     }
     
+    // Save to local cache
+    try {
+      localStorage.setItem('cache_invoices', JSON.stringify(state.invoices));
+      localStorage.setItem('cache_customers', JSON.stringify(state.customers));
+      localStorage.setItem('cache_products', JSON.stringify(state.products));
+      localStorage.setItem('cache_company', JSON.stringify(state.company));
+    } catch (e) {}
+
     // Update sidebar logo/subtext
     const logoSrc = state.company.logo_url || state.company.logoUrl || '/logo.png';
     const sidebarLogo = document.getElementById('sidebar-logo-img');
@@ -1370,7 +1407,8 @@ async function initApp() {
     const mobileLogo = document.getElementById('mobile-logo-img');
     if (mobileLogo) mobileLogo.src = logoSrc;
 
-    document.getElementById('sidebar-company-name').textContent = state.company.name.split(',')[0];
+    const sideComp = document.getElementById('sidebar-company-name');
+    if (sideComp) sideComp.textContent = state.company.name.split(',')[0];
     if (document.getElementById('mobile-welcome-name')) {
       document.getElementById('mobile-welcome-name').textContent = state.company.contact_person || state.company.contactPerson || 'Kathryn Murphy';
     }
@@ -1387,12 +1425,19 @@ async function initApp() {
       }
     }
 
-    render();
-    hideSplashScreen();
+    // Smoothly re-render if user hasn't started filling a new invoice
+    if (state.currentPage !== 'invoice' || !state.newInvoice || state.newInvoice.items.length === 0) {
+      render();
+    }
+    if (!hasCache) {
+      hideSplashScreen();
+    }
   } catch (err) {
     console.error("Failed to load application data:", err);
-    showAlert("Database connection failed. Please check backend log.", "danger");
-    hideSplashScreen();
+    if (!hasCache) {
+      showAlert("Database connection failed. Please check backend log.", "danger");
+      hideSplashScreen();
+    }
   }
 }
 
@@ -2275,7 +2320,7 @@ function renderNewInvoice() {
       <button class="btn btn-secondary" onclick="navigate('dashboard')"><i class="ti ti-x"></i> Cancel</button>
       <button class="btn btn-secondary ocr-btn-scan" onclick="openOcrModal()"><i class="ti ti-camera"></i> Scan Bill (OCR)</button>
       <button class="btn btn-secondary" onclick="previewInvoice()"><i class="ti ti-eye"></i> Preview</button>
-      <button class="btn btn-primary" onclick="saveInvoice()"><i class="ti ti-device-floppy"></i> Save & Generate</button>
+      <button class="btn btn-primary" id="btn-save-inv" onclick="saveInvoice()"><i class="ti ti-device-floppy"></i> Save & Generate</button>
     </div>
   </div>
   <datalist id="product-list">${state.products.map(p=>`<option value="${p.name}">`).join('')}</datalist>
@@ -3033,43 +3078,48 @@ async function saveInvoice() {
   }
   
   isSavingInvoice = true;
-  // Always upsert customer details on invoice save to save any edits or new customer profiles
-  let cust;
-  try {
-    const custRes = await apiFetch('/api/customers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: custName,
-        gstin: document.getElementById('inv-gstin')?.value?.trim() || inv.customer?.gstin || '',
-        address: document.getElementById('inv-addr')?.value?.trim() || inv.customer?.address || '',
-        state: document.getElementById('inv-state')?.value?.trim() || inv.customer?.state || 'Karnataka',
-        phone: document.getElementById('inv-phone')?.value?.trim() || inv.customer?.phone || '',
-        email: ''
-      })
-    });
-    if (!custRes.ok) throw new Error(await custRes.text());
-    cust = await custRes.json();
-    
-    // Update local state customers list
-    const existingIdx = state.customers.findIndex(c => c.name.toLowerCase() === custName.toLowerCase());
-    if (existingIdx !== -1) {
-      state.customers[existingIdx] = cust;
-    } else {
-      state.customers.push(cust);
-    }
-  } catch (err) {
-    isSavingInvoice = false;
-    alert('Failed to save customer details: ' + err.message);
-    return;
+
+  // Visual loading feedback immediately on the clicked button
+  const saveBtn = document.getElementById('btn-save-inv') || document.getElementById('btn-save-preview-inv');
+  const originalBtnHTML = saveBtn ? saveBtn.innerHTML : '';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="ti ti-loader spin"></i> Saving & Generating...';
   }
+
+  const custGstin = document.getElementById('inv-gstin')?.value?.trim() || inv.customer?.gstin || '';
+  const custAddr = document.getElementById('inv-addr')?.value?.trim() || inv.customer?.address || '';
+  const custState = document.getElementById('inv-state')?.value?.trim() || inv.customer?.state || 'Karnataka';
+  const custPhone = document.getElementById('inv-phone')?.value?.trim() || inv.customer?.phone || '';
+
+  // Instantly update local customer cache for 0ms lag
+  const existingCust = state.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+  if (existingCust) {
+    if (custGstin) existingCust.gstin = custGstin;
+    if (custAddr) existingCust.address = custAddr;
+    if (custState) existingCust.state = custState;
+    if (custPhone) existingCust.phone = custPhone;
+  } else {
+    state.customers.push({
+      name: custName,
+      gstin: custGstin,
+      address: custAddr,
+      state: custState,
+      phone: custPhone,
+      email: ''
+    });
+  }
+  try { localStorage.setItem('cache_customers', JSON.stringify(state.customers)); } catch (e) {}
 
   const calc = calcInvoice(inv.items);
   const invoiceData = {
     id: inv.invNo,
     date: document.getElementById('inv-date')?.value?.trim() || inv.date || today(),
-    customerName: cust.name,
-    gstin: document.getElementById('inv-gstin')?.value?.trim() || cust.gstin || '',
+    customerName: custName,
+    customerAddress: custAddr,
+    customerState: custState,
+    customerPhone: custPhone,
+    gstin: custGstin,
     taxable: calc.taxable,
     cgst: calc.cgst,
     sgst: calc.sgst,
@@ -3097,6 +3147,7 @@ async function saveInvoice() {
   };
 
   try {
+    // Single consolidated network call - customer and invoice saved together in backend transaction
     const res = await apiFetch('/api/invoices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3106,8 +3157,9 @@ async function saveInvoice() {
     if (!res.ok) throw new Error(await res.text());
     const saved = await res.json();
     state.invoices.unshift(saved);
+    try { localStorage.setItem('cache_invoices', JSON.stringify(state.invoices)); } catch (e) {}
     
-    // Reset page states and navigate to history first
+    // Reset page states and navigate to history
     state.newInvoice = {
       invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
     };
@@ -3118,6 +3170,10 @@ async function saveInvoice() {
     alert('Error saving invoice: ' + err.message);
   } finally {
     isSavingInvoice = false;
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnHTML;
+    }
   }
 }
 
@@ -3158,7 +3214,7 @@ function renderPreviewPage() {
     <div><div class="page-title">Invoice Preview</div><div class="page-subtitle">${inv.invNo}</div></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-secondary" onclick="navigate('invoice')"><i class="ti ti-edit"></i> Edit</button>
-      <button class="btn btn-success" onclick="saveInvoice()"><i class="ti ti-device-floppy"></i> Save Invoice</button>
+      <button class="btn btn-success" id="btn-save-preview-inv" onclick="saveInvoice()"><i class="ti ti-device-floppy"></i> Save Invoice</button>
       <button class="btn btn-primary" onclick="window.print()"><i class="ti ti-printer"></i> Print / PDF</button>
     </div>
   </div>
@@ -3817,6 +3873,7 @@ async function toggleStatus(id) {
     });
     if (!res.ok) throw new Error(await res.text());
     inv.status = newStatus;
+    try { localStorage.setItem('cache_invoices', JSON.stringify(state.invoices)); } catch (e) {}
     showAlert(`Invoice ${id} updated to ${newStatus}!`);
     render();
   } catch (err) {
@@ -3991,6 +4048,7 @@ async function addCustomer() {
     if (!res.ok) throw new Error(await res.text());
     const saved = await res.json();
     state.customers.push(saved);
+    try { localStorage.setItem('cache_customers', JSON.stringify(state.customers)); } catch (e) {}
     showAlert(`Customer "${name}" added!`);
     navigate('customers');
   } catch (err) {
@@ -4087,6 +4145,7 @@ async function addProduct() {
     if (!res.ok) throw new Error(await res.text());
     const saved = await res.json();
     state.products.push(saved);
+    try { localStorage.setItem('cache_products', JSON.stringify(state.products)); } catch (e) {}
     showAlert(`Product "${name}" added!`);
     navigate('products');
   } catch (err) {
@@ -4417,6 +4476,7 @@ async function saveSettings() {
     });
     if (!res.ok) throw new Error(await res.text());
     state.company = await res.json();
+    try { localStorage.setItem('cache_company', JSON.stringify(state.company)); } catch (e) {}
     const nameOnly = state.company.name.split(',')[0];
     localStorage.setItem('cached_company_name', nameOnly);
     if (state.company.logo_url || state.company.logoUrl) {

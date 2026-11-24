@@ -307,7 +307,8 @@ app.post('/api/invoices', async (req, res) => {
   const {
     id, date, customerName, gstin, taxable, cgst, sgst, igst, total, status,
     notes, poNo, deliveryNote, termsOfPayment, dispatchThrough, destination, items,
-    journeyDate, bookingBranch, placeOfSupply
+    journeyDate, bookingBranch, placeOfSupply,
+    customerAddress, customerPhone, customerState
   } = req.body;
 
   if (!id || !date || !customerName || !items || !Array.isArray(items) || items.length === 0) {
@@ -331,10 +332,22 @@ app.post('/api/invoices', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Ensure customer exists
+    // 1. Ensure customer exists and upsert contact/address details directly in this transaction
     await client.query(
-      'INSERT INTO customers (name, gstin, state) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING',
-      [String(customerName).trim(), gstin ? String(gstin).trim() : '', 'Karnataka']
+      `INSERT INTO customers (name, gstin, address, state, phone)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (name) DO UPDATE SET
+         gstin = CASE WHEN EXCLUDED.gstin <> '' THEN EXCLUDED.gstin ELSE customers.gstin END,
+         address = CASE WHEN EXCLUDED.address <> '' THEN EXCLUDED.address ELSE customers.address END,
+         state = CASE WHEN EXCLUDED.state <> '' THEN EXCLUDED.state ELSE customers.state END,
+         phone = CASE WHEN EXCLUDED.phone <> '' THEN EXCLUDED.phone ELSE customers.phone END`,
+      [
+        String(customerName).trim(),
+        gstin ? String(gstin).trim() : '',
+        customerAddress ? String(customerAddress).trim() : '',
+        customerState ? String(customerState).trim() : 'Karnataka',
+        customerPhone ? String(customerPhone).trim() : ''
+      ]
     );
 
     // 2. Insert Invoice
