@@ -2170,7 +2170,6 @@ function render() {
     case 'view': c.innerHTML = renderViewInvoice(state.viewingInvoice); break;
     case 'preview': c.innerHTML = renderPreviewPage(); break;
   }
-  attachEventListeners();
   updateThemeIcons();
 }
 
@@ -4613,8 +4612,6 @@ function uploadLogoFile(input) {
   };
   reader.readAsDataURL(file);
 }
-
-function attachEventListeners() {}
 
 // Initial load
 initApp();
