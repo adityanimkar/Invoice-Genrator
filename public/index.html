@@ -1450,7 +1450,8 @@ function isInterstate(coStateCode, posVal) {
 }
 
 function calcInvoice(items) {
-  const taxable = items.reduce((s, it) => s + it.amount, 0);
+  const safeItems = Array.isArray(items) ? items : [];
+  const taxable = safeItems.reduce((s, it) => s + (Number(it.amount) || 0), 0);
   let posVal = '';
   if (document.getElementById('inv-pos')) {
     posVal = document.getElementById('inv-pos').value;
@@ -1463,9 +1464,9 @@ function calcInvoice(items) {
   const isInter = isInterstate(state.company.state_code || state.company.stateCode || '29', posVal);
   let cgst = 0, sgst = 0, igst = 0;
   if (isInter) {
-    igst = items.reduce((s, it) => s + (it.amount * it.gstRate / 100), 0);
+    igst = safeItems.reduce((s, it) => s + ((Number(it.amount) || 0) * (Number(it.gstRate) || 0) / 100), 0);
   } else {
-    cgst = items.reduce((s, it) => s + (it.amount * it.gstRate / 200), 0);
+    cgst = safeItems.reduce((s, it) => s + ((Number(it.amount) || 0) * (Number(it.gstRate) || 0) / 200), 0);
     sgst = cgst;
   }
   const total = taxable + cgst + sgst + igst;
@@ -1936,7 +1937,7 @@ function showAlert(msg, type='success') {
 function navigate(page, data) {
   state.currentPage = page;
   if (page === 'invoice') {
-    state.newInvoice = data || {
+    state.newInvoice = data || state.newInvoice || {
       invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
     };
   }
@@ -2190,7 +2191,13 @@ function renderDashboard() {
 
 // ========== NEW INVOICE ==========
 function renderNewInvoice() {
+  if (!state.newInvoice) {
+    state.newInvoice = {
+      invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
+    };
+  }
   const inv = state.newInvoice;
+  inv.items = Array.isArray(inv.items) ? inv.items : [];
   const calc = inv.items.length ? calcInvoice(inv.items) : { taxable:0, cgst:0, sgst:0, igst:0, total:0 };
   const alertStr = state.alert ? `<div class="alert alert-${state.alert.type}"><i class="ti ti-check"></i> ${state.alert.msg}</div>` : '';
 
@@ -3009,11 +3016,23 @@ function applyOcrDataToInvoice() {
   showAlert('Invoice fields populated from OCR scan!', 'success');
 }
 
+let isSavingInvoice = false;
+
 async function saveInvoice() {
+  if (isSavingInvoice) return;
+  if (!state.newInvoice) {
+    showAlert('No active invoice to save.', 'danger');
+    return;
+  }
   const inv = state.newInvoice;
-  const custName = document.getElementById('inv-customer')?.value || '';
-  if (!custName || !inv.items.length) { showAlert('Please add a customer and at least one product.', 'danger'); return; }
+  inv.items = Array.isArray(inv.items) ? inv.items : [];
+  const custName = document.getElementById('inv-customer')?.value?.trim() || inv.customer?.name?.trim() || '';
+  if (!custName || !inv.items.length) {
+    showAlert('Please add a customer and at least one product.', 'danger');
+    return;
+  }
   
+  isSavingInvoice = true;
   // Always upsert customer details on invoice save to save any edits or new customer profiles
   let cust;
   try {
@@ -3022,10 +3041,10 @@ async function saveInvoice() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: custName,
-        gstin: document.getElementById('inv-gstin')?.value || '',
-        address: document.getElementById('inv-addr')?.value || '',
-        state: document.getElementById('inv-state')?.value || 'Karnataka',
-        phone: document.getElementById('inv-phone')?.value || '',
+        gstin: document.getElementById('inv-gstin')?.value?.trim() || inv.customer?.gstin || '',
+        address: document.getElementById('inv-addr')?.value?.trim() || inv.customer?.address || '',
+        state: document.getElementById('inv-state')?.value?.trim() || inv.customer?.state || 'Karnataka',
+        phone: document.getElementById('inv-phone')?.value?.trim() || inv.customer?.phone || '',
         email: ''
       })
     });
@@ -3040,6 +3059,7 @@ async function saveInvoice() {
       state.customers.push(cust);
     }
   } catch (err) {
+    isSavingInvoice = false;
     alert('Failed to save customer details: ' + err.message);
     return;
   }
@@ -3087,13 +3107,17 @@ async function saveInvoice() {
     const saved = await res.json();
     state.invoices.unshift(saved);
     
-    // Reset page states
-    state.newInvoice = null;
-    showAlert(`Invoice ${invoiceData.id} created and saved successfully!`);
+    // Reset page states and navigate to history first
+    state.newInvoice = {
+      invNo: getNextInvNo(), date: today(), customer: null, items: [], poNo: '', deliveryNote: '', termsOfPayment: 'Immediate', dispatchThrough: '', destination: '', notes: ''
+    };
     navigate('history');
+    showAlert(`Invoice ${invoiceData.id} created and saved successfully!`);
   } catch (err) {
     console.error(err);
     alert('Error saving invoice: ' + err.message);
+  } finally {
+    isSavingInvoice = false;
   }
 }
 
@@ -3121,7 +3145,12 @@ function previewInvoice() {
 
 // ========== INVOICE PREVIEW PAGE ==========
 function renderPreviewPage() {
+  if (!state.newInvoice) {
+    navigate('invoice');
+    return '';
+  }
   const inv = state.newInvoice;
+  inv.items = Array.isArray(inv.items) ? inv.items : [];
   const calc = calcInvoice(inv.items);
   const invData = { ...inv, ...calc, id: inv.invNo, customer: inv.customer?.name || 'Customer', date: inv.date };
   return `
