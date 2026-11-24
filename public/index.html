@@ -1889,19 +1889,23 @@ async function fetchGstinDetails(gstin, context) {
         // If customer name is empty, focus it so user can type the trade name
         const custInput = document.getElementById('inv-customer');
         if (custInput && !custInput.value) {
+          custInput.placeholder = "Enter customer name (saved automatically for future)";
           custInput.focus();
         }
       } else if (context === 'customer') {
         const stateEl = document.getElementById('nc-state');
         if (stateEl && data.state) stateEl.value = data.state;
         const nameInput = document.getElementById('nc-name');
-        if (nameInput && !nameInput.value) nameInput.focus();
+        if (nameInput && !nameInput.value) {
+          nameInput.placeholder = "Enter customer name (saved automatically for future)";
+          nameInput.focus();
+        }
       }
       if (statusEl) {
         statusEl.style.display = 'inline-block';
         statusEl.style.color = '#2563eb';
-        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType || 'Business'}`;
-        statusEl.title = `State and entity decoded from GSTIN. Type customer name to complete.`;
+        statusEl.innerHTML = `<i class="ti ti-map-pin"></i> ${data.state} (${data.stateCode}) • ${data.entityType || 'Business'} <span style="font-weight:400;color:var(--color-text-secondary,#64748b);">(New GSTIN - enter name once to remember)</span>`;
+        statusEl.title = `State & entity decoded. Enter Customer Name once to save to database.`;
       }
     }
   } catch (err) {
